@@ -1,0 +1,13 @@
+{
+   "pg_config": {
+      "host": "",
+      "database": "",
+      "user": "",
+      "password": ""
+   },
+   "neo4j_config": {
+      "uri": "",
+      "user": "",
+      "password": ""
+   }
+}
