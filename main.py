@@ -2,6 +2,7 @@ from src.database.neo4j import Neo4jDatabase
 from src.data_processing import DataProcessor
 from src.logs.logger import DataProcessingLogger
 import os
+import requests
 
 from dotenv import load_dotenv
 
@@ -22,3 +23,34 @@ data_processor = DataProcessor()
 
 # Initialize logger
 logger = DataProcessingLogger("logs/data_processing.log")
+
+indexer_uri = os.getenv("INDEXER_URI")
+
+raw = requests.post(indexer_uri+"/graphql", json = {
+    "operationName": "getTransactions",
+    "variables": None,
+    "query": """query getTransactions {
+                    nftTransferEntities(limit: 20) {
+                        amount
+                        id
+                        fromAddress
+                        toAddress
+                        nft {
+                        id
+                        }
+                    }
+                }"""
+    },
+    headers={
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+)
+
+parsed = raw.json()
+
+transfers = parsed['data']['nftTransferEntities']
+
+for transfer in transfers:
+    print(transfer)
+    logger.log(transfer)
