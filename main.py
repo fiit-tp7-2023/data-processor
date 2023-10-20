@@ -1,38 +1,24 @@
-from config.db_config import get_db_config
-from src.database.postgres import PostgreSQLDatabase
 from src.database.neo4j import Neo4jDatabase
 from src.data_processing import DataProcessor
 from src.logs.logger import DataProcessingLogger
+import os
 
-# Load database configurations from db_config.json
-db_config = get_db_config()
+from dotenv import load_dotenv
 
-# Initialize and connect to PostgreSQL
-pg_db = PostgreSQLDatabase(db_config['pg_config'])
-pg_db.connect()
+
+#load environment variables from .env file
+load_dotenv()
+neo4j_uri = os.getenv("NEO4J_URI")
+neo4j_user = os.getenv("NEO4J_USER")
+neo4j_password = os.getenv("NEO4J_PASSWORD")
 
 # Initialize and connect to Neo4j
-neo4j_db = Neo4jDatabase(
-    db_config['neo4j_uri'],
-    db_config['neo4j_user'],
-    db_config['neo4j_password']
-)
-neo4j_db.connect()
+neo4j = Neo4jDatabase(neo4j_uri, neo4j_user, neo4j_password)
+neo4j.print_greeting("hello, world")
+
 
 # Initialize data processor
 data_processor = DataProcessor()
 
 # Initialize logger
-logger = DataProcessingLogger("config/logs/data_processing.log")
-
-# Fetch data from PostgreSQL and process it
-pg_db.execute_query("SELECT * FROM your_pg_table")
-for row in pg_db.fetch_data():
-    processed_data = data_processor.process_data(row)
-    # Logging the processed data (example)
-    logger.log(f"Processed data: {processed_data}")
-    # Create nodes in Neo4j (example)
-    neo4j_db.create_node("Data", {"value": processed_data})
-
-# Close connections
-pg_db.close()
+logger = DataProcessingLogger("logs/data_processing.log")
