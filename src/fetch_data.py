@@ -1,15 +1,14 @@
 import requests
 import os
 from src.logs.logger import DataProcessingLogger
-
+from src.services.IndexerService import IndexerService
 
 
 
 def main():
-    logger = DataProcessingLogger("src/logs/indexer_data/indexer.log")
+    service = IndexerService()
 
-    indexer_uri = os.getenv("INDEXER_URI")
-    raw = requests.post(indexer_uri+"/graphql", json = {
+    query = {
         "operationName": "getTransactions",
         "variables": None,
         "query": """query getTransactions {
@@ -23,16 +22,15 @@ def main():
                             }
                         }
                     }"""
-        },
-        headers={
-            "Content-Type": "application/json",
-            "Accept": "application/json"
         }
-    )
 
-    parsed = raw.json()
-
+    headers = {
+         "Content-Type": "application/json",
+            "Accept": "application/json"
+    }
+   
+    parsed = service.runQuery(query, headers)
+    
     transfers = parsed['data']['nftTransferEntities']
-    logger.clear()
     for transfer in transfers:
-        logger.log(transfer)
+        DataProcessingLogger.get_instance().log(transfer)
