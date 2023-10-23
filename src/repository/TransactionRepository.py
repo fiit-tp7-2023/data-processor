@@ -1,4 +1,5 @@
 from neo4j import ManagedTransaction
+from src.models.neo4j_models import Transaction
 class TransactionRepository:
     
     # UTIL FUNCTION, IS ADDRESS IN GRAPH ?
@@ -13,11 +14,20 @@ class TransactionRepository:
 
     # INSERT NFT INTO GRAPH DATABASE
     @staticmethod
-    def _insert_transaction_with_nft(tx: ManagedTransaction, transaction_id: str, nft_id: str):
+    def _insert_transaction_with_nft(tx: ManagedTransaction, data: Transaction):
         query = (
             "MERGE (n:NFT {nft_id: $nft_id}) - [:NFT] -> (t:Transaction {transaction_id: $transaction_id})"
         )
-        tx.run(query, nft_id=nft_id, transaction_id=transaction_id)
+        tx.run(query, nft_id=data.nft_id, transaction_id=data.transaction_id)
+        
+    # INSERT MULTIPLE NFT INTO GRAPH DATABASE
+    @staticmethod
+    def _insert_transactions_with_nft(tx: ManagedTransaction, data: list[Transaction]):
+        query = """
+        UNWIND $props AS data
+        MERGE (n:NFT {nft_id: data.nft_id}) - [:NFT] -> (t:Transaction {transaction_id: data.transaction_id})
+        """
+        tx.run(query, props=[{"nft_id": t.nft_id, "transaction_id":t.transaction_id } for t in data])
 
 
     # INSERT ADDRESS INTO GRAPH DATABASE
@@ -40,24 +50,20 @@ class TransactionRepository:
         
     # CREATE SENT RELATIONSHIP BETWEEN TRANSACTION AND ADDRESSES
     @staticmethod
-    def _create_transaction_relationships(tx: ManagedTransaction, transaction_id: str, from_address: str, to_address: str):
+    def _create_transaction_relationships(tx: ManagedTransaction, data: Transaction):
         query = "MATCH (tx:Transaction), (from:Address), (to: Address) WHERE tx.transaction_id = $transaction_id AND from.address = $from_address AND to.address = $to_address CREATE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)"
-        tx.run(query,  transaction_id=transaction_id, from_address=from_address, to_address= to_address)
+        tx.run(query,  transaction_id=data.transaction_id, from_address=data.from_address, to_address=data.to_address)
         
     
         
     # CREATE MULTIPLE SENT RELATIONSHIP BETWEEN TRANSACTION AND ADDRESSES
     @staticmethod
-    def _create_transaction_relationships_multiple(tx: ManagedTransaction, data: list[tuple[str, str, str]]):
+    def _create_transaction_relationships_multiple(tx: ManagedTransaction, data: list[Transaction]):
         query = """
         UNWIND $props AS data
         MATCH (tx:Transaction), (from:Address), (to: Address) 
         WHERE tx.transaction_id = data.transaction_id AND from.address = data.from_address AND to.address = data.to_address 
         CREATE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)
         """
-        input_data = []
-        for transaction_id, from_address, to_address in data:
-            input_data.append({"transaction_id": transaction_id, "from_address": from_address, "to_address": to_address})
-            
-        print(input_data)
-        tx.run(query, props=input_data)
+        formatted =[{"nft_id": t.nft_id, "transaction_id":t.transaction_id, "to_address":t.to_address, "from_address":t.from_address } for t in data]
+        tx.run(query, props=formatted)

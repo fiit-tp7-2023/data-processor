@@ -19,6 +19,7 @@ def main():
     driver = Neo4jDatabase.get_instance().driver
     transaction_service = TransactionService(driver)
 
+    counter = 0
     transactions = []
     print('Starting...')
     for item in data:
@@ -26,9 +27,17 @@ def main():
             from_address=item['fromAddress'],
             to_address=item['toAddress'],
             transaction_id=item['id'],
-            nft=item['nft']['id']
+            nft_id=item['nft']['id']
         )
         transactions.append(transaction)
+        if counter == 100:
+            print('Sending batch >>>')
+            transaction_service.processMultipleTransactions(transactions)
+            print("Batch sent!")
+            transactions = []
+            counter = 0
         
+    print('Sending batch >>>')
     transaction_service.processMultipleTransactions(transactions)
+    print("Batch sent!")
     print('Done!')

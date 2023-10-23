@@ -10,9 +10,13 @@ class TransactionService:
         self.driver.close()
         
     def processMultipleTransactions(self, transactions: list[Transaction]):
-        addresses = (x.transaction_id for x in transactions)
+        data = []
+        for t in transactions:
+            data.append(t.from_address)
+            data.append(t.to_address)
+            
+        addresses = list(set(data))
         self.insert_addresses(addresses)
-        
         self.insert_transactions(transactions)
 
     def processTransaction(self, transaction: Transaction):
@@ -23,7 +27,7 @@ class TransactionService:
         if not self.isAddressInGraph(transaction.to_address):
             self.insert_address(transaction.to_address)
 
-        self.insert_transaction(transaction.from_address, transaction.to_address, transaction.transaction_id, transaction.nft)
+        self.insert_transaction(transaction)
             
     def isAddressInGraph(self, address: str):
         with self.driver.session() as session:
@@ -39,16 +43,14 @@ class TransactionService:
             session.write_transaction(TransactionRepository._insert_addresses, addresses)
 
 
-    def insert_transaction(self, from_address: str, to_address: str, transaction_id: str, nft_id: str):
+    def insert_transaction(self, data: Transaction):
         with self.driver.session() as session:
-            session.write_transaction(TransactionRepository._insert_transaction_with_nft, transaction_id, nft_id)
-            session.write_transaction(TransactionRepository._create_transaction_relationships, transaction_id, from_address, to_address)
+            session.write_transaction(TransactionRepository._insert_transaction_with_nft, data)
+            session.write_transaction(TransactionRepository._create_transaction_relationships, data)
 
     def insert_transactions(self, transactions: list[Transaction]):
         with self.driver.session() as session:
-            data = []
-            for transaction in transactions:
-                data.append((transaction.transaction_id, transaction.from_address, transaction.to_address))
-            session.write_transaction(TransactionRepository._create_transaction_relationships_multiple, data)
+            session.write_transaction(TransactionRepository._insert_transactions_with_nft, transactions)
+            session.write_transaction(TransactionRepository._create_transaction_relationships_multiple, transactions)
 
     
