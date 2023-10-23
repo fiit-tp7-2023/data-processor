@@ -23,13 +23,8 @@ def main():
                         }
                     }"""
         }
-
-    headers = {
-         "Content-Type": "application/json",
-            "Accept": "application/json"
-    }
    
-    parsed = service.runQuery(query, headers)
+    parsed = service.runQuery(query)
     
     transfers = parsed['data']['nftTransferEntities']
     for transfer in transfers:

@@ -10,9 +10,14 @@ class IndexerService:
         self.logger.clear()
 
 
-    def runQuery(self, query, headers):
-        raw = requests.post(self.indexer_uri+"/graphql", json = query,
-            headers=headers)
+    def runQuery(self, query):
+        raw = requests.post(self.indexer_uri+"/graphql", 
+            json = query,
+            headers= {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+                }
+        )
 
         return raw.json()
 
