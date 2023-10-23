@@ -14,7 +14,6 @@ if __name__ == "__main__":
     neo4j = Neo4jDatabase(neo4j_uri, neo4j_user, neo4j_password)
     logfile = DataProcessingLogger("src/logs/indexer_data/indexer.log")
 
-    with neo4j.driver.session() as session:
-        program.Program.run()
+    program.Program.run()
 
 

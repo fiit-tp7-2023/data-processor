@@ -7,7 +7,3 @@ __pycache__/
 venv/
 
 *.log
-
-# ignore the vscode
-.vscode/
-```
