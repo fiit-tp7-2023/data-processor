@@ -1,9 +1,9 @@
-
+from neo4j import ManagedTransaction
 class TransactionRepository:
     
     # UTIL FUNCTION, IS ADDRESS IN GRAPH ?
     @staticmethod  
-    def _is_address_in_graph(tx, address):
+    def _is_address_in_graph(tx: ManagedTransaction, address: str):
         query = (
             "MATCH (a:Address) WHERE a.address = $address RETURN a"
         )
@@ -13,16 +13,16 @@ class TransactionRepository:
 
     # INSERT NFT INTO GRAPH DATABASE
     @staticmethod
-    def _insert_transaction_with_nft(tx, transaction, nft):
+    def _insert_transaction_with_nft(tx: ManagedTransaction, transaction_id: str, nft_id: str):
         query = (
             "MERGE (n:NFT {nft_id: $nft_id}) - [:NFT] -> (t:Transaction {transaction_id: $transaction_id})"
         )
-        tx.run(query, nft_id=nft, transaction_id=transaction)
+        tx.run(query, nft_id=nft_id, transaction_id=transaction_id)
 
 
     # INSERT ADDRESS INTO GRAPH DATABASE
     @staticmethod
-    def _insert_address(tx, address):
+    def _insert_address(tx: ManagedTransaction, address: str):
         query = (
             "MERGE (a:Address {address: $address})"
         )
@@ -30,7 +30,6 @@ class TransactionRepository:
         
     # CREATE SENT RELATIONSHIP BETWEEN TRANSACTION AND ADDRESSES
     @staticmethod
-    def _create_transaction_relationships(tx, transaction_id, from_address, to_address):
-        print(f"MATCH (tx:Transaction), (from:Address), (to: Address) WHERE tx.transaction_id = ${transaction_id} AND from.address = ${from_address} AND to.address = ${to_address} CREATE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)")
+    def _create_transaction_relationships(tx: ManagedTransaction, transaction_id: str, from_address: str, to_address: str):
         query = "MATCH (tx:Transaction), (from:Address), (to: Address) WHERE tx.transaction_id = $transaction_id AND from.address = $from_address AND to.address = $to_address CREATE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)"
         tx.run(query,  transaction_id=transaction_id, from_address=from_address, to_address= to_address)
