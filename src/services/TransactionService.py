@@ -27,12 +27,10 @@ class TransactionService:
             session.write_transaction(TransactionRepository._insert_address, address)
 
 
-    def insert_transaction(self, from_address, to_address, transaction, nft):
+    def insert_transaction(self, from_address, to_address, transaction_id, nft_id):
         with self.driver.session() as session:
-            session.write_transaction(TransactionRepository._create_sent_relationship, from_address, to_address)
-            session.write_transaction(TransactionRepository._create_received_relationship, from_address, to_address)
-            session.write_transaction(TransactionRepository._insert_nft, transaction, nft)
-            session.write_transaction(TransactionRepository._create_nft_relationship, transaction, nft)
+            session.write_transaction(TransactionRepository._insert_transaction_with_nft, transaction_id, nft_id)
+            session.write_transaction(TransactionRepository._create_transaction_relationships, transaction_id, from_address, to_address)
 
 
     

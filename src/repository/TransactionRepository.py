@@ -13,11 +13,9 @@ class TransactionRepository:
 
     # INSERT NFT INTO GRAPH DATABASE
     @staticmethod
-    def _insert_nft(tx, transaction, nft):
+    def _insert_transaction_with_nft(tx, transaction, nft):
         query = (
-            "MERGE (n:NFT {nft_id: $nft_id}) "
-            "MERGE (t:Transaction {transaction_id: $transaction_id}) "
-            "MERGE (t)-[:NFT]->(n)"
+            "MERGE (n:NFT {nft_id: $nft_id}) - [:NFT] -> (t:Transaction {transaction_id: $transaction_id})"
         )
         tx.run(query, nft_id=nft, transaction_id=transaction)
 
@@ -29,24 +27,10 @@ class TransactionRepository:
             "MERGE (a:Address {address: $address})"
         )
         tx.run(query, address=address)
-
-
-    # CREATE RELATIONSHIP BETWEEN ADDRESSES SENT
+        
+    # CREATE SENT RELATIONSHIP BETWEEN TRANSACTION AND ADDRESSES
     @staticmethod
-    def _create_sent_relationship(tx, from_address, to_address):
-        query = "MATCH (from:Address), (to:Address) WHERE from.address = $from_address AND to.address = $to CREATE (from)-[:SENT]->(to)"
-        tx.run(query, from_address=from_address, to=to_address)
-
-
-    # CREATE RELATIONSHIP BETWEEN ADDRESSES RECEIVED
-    @staticmethod
-    def _create_received_relationship(tx, from_address, to_address):
-        query = "MATCH (from:Address), (to:Address) WHERE from.address = $from_address AND to.address = $to CREATE (from)<-[:RECEIVED]-(to)"
-        tx.run(query, from_address=from_address, to=to_address)
-
-
-    # CREATE RELATIONSHIP BETWEEN TRANSACTION AND NFT
-    @staticmethod
-    def _create_nft_relationship(tx, transaction, nft):
-        query = "MATCH (t:Transaction), (n:NFT) WHERE t.id = $transaction_id AND n.id = $nft_id CREATE (t)-[:NFT]->(n)"
-        tx.run(query, transaction_id=transaction, nft_id=nft)
+    def _create_transaction_relationships(tx, transaction_id, from_address, to_address):
+        print(f"MATCH (tx:Transaction), (from:Address), (to: Address) WHERE tx.transaction_id = ${transaction_id} AND from.address = ${from_address} AND to.address = ${to_address} CREATE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)")
+        query = "MATCH (tx:Transaction), (from:Address), (to: Address) WHERE tx.transaction_id = $transaction_id AND from.address = $from_address AND to.address = $to_address CREATE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)"
+        tx.run(query,  transaction_id=transaction_id, from_address=from_address, to_address= to_address)

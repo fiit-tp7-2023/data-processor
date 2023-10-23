@@ -12,16 +12,17 @@ def main():
         "operationName": "getTransactions",
         "variables": None,
         "query": """query getTransactions {
-                        nftTransferEntities(limit: 100) {
-                            amount
-                            id
-                            fromAddress
-                            toAddress
-                            nft {
-                            id
-                            }
-                        }
-                    }"""
+            nftTransferEntities(limit: 100, where: {toAddress_not_contains: "0x00", fromAddress_not_contains: "0x00"}) {
+                amount
+                id
+                fromAddress
+                toAddress
+                nft {
+                id
+                }
+            }
+            }
+            """
         }
    
     parsed = service.runQuery(query)
