@@ -19,9 +19,8 @@ def main():
     driver = Neo4jDatabase.get_instance().driver
     transaction_service = TransactionService(driver)
 
-
-    total_items: int = len(data)
-    processed_items: int = 0
+    transactions = []
+    print('Starting...')
     for item in data:
         transaction = Transaction(
             from_address=item['fromAddress'],
@@ -29,9 +28,7 @@ def main():
             transaction_id=item['id'],
             nft=item['nft']['id']
         )
-        transaction_service.processTransaction(transaction)
-    
-   
-        processed_items += 1
-        percentage: float = (processed_items / total_items) * 100
-        print(f"Processing: {processed_items}/{total_items} ({percentage:.2f}%)", end='\r')
+        transactions.append(transaction)
+        
+    transaction_service.processMultipleTransactions(transactions)
+    print('Done!')
