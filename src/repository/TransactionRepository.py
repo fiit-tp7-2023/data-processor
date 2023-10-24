@@ -42,11 +42,11 @@ class TransactionRepository:
     # INSERT ADDRESSES INTO GRAPH DATABASE
     @staticmethod
     def _insert_addresses(tx: ManagedTransaction, addresses: list[str]):
-        raw_query = []
-        for address in addresses:
-            raw_query.append(f"(:Address {{address: '{address}'}})")
-        query = f'CREATE {",".join(raw_query)}' 
-        tx.run(query)
+        query = """
+        UNWIND $addresses AS address
+        MERGE (a:Address {address: address})
+        """
+        tx.run(query, addresses=addresses)
         
     # CREATE SENT RELATIONSHIP BETWEEN TRANSACTION AND ADDRESSES
     @staticmethod
@@ -61,9 +61,10 @@ class TransactionRepository:
     def _create_transaction_relationships_multiple(tx: ManagedTransaction, data: list[Transaction]):
         query = """
         UNWIND $props AS data
-        MATCH (tx:Transaction), (from:Address), (to: Address) 
-        WHERE tx.transaction_id = data.transaction_id AND from.address = data.from_address AND to.address = data.to_address 
-        CREATE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)
+        MATCH (tx:Transaction {transaction_id: data.transaction_id}),
+        (from:Address {address: data.from_address}),
+        (to: Address {address: data.to_address})
+        MERGE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)
         """
         formatted =[{"nft_id": t.nft_id, "transaction_id":t.transaction_id, "to_address":t.to_address, "from_address":t.from_address } for t in data]
         tx.run(query, props=formatted)
