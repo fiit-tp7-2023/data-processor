@@ -12,7 +12,7 @@ def main():
         "operationName": "getTransactions",
         "variables": None,
         "query": """query getTransactions {
-            nftTransferEntities(where: {toAddress_not_contains: "0x00", fromAddress_not_contains: "0x00"}) {
+            nftTransferEntities(limit:30000,where: {toAddress_not_contains: "0x00", fromAddress_not_contains: "0x00"}) {
                 amount
                 id
                 fromAddress
