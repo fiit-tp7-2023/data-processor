@@ -20,6 +20,8 @@ def main():
     transaction_service = TransactionService(driver)
 
     counter = 0
+    batches = len(data) // 2000
+    batchesCount = 0
     transactions = []
     print('Starting...')
     for item in data:
@@ -29,15 +31,17 @@ def main():
             transaction_id=item['id'],
             nft_id=item['nft']['id']
         )
+        counter += 1
         transactions.append(transaction)
-        if counter == 100:
-            print('Sending batch >>>')
+        if counter == 2000:
+            print(f"Sending batch {batchesCount} / {batches} ")
             transaction_service.processMultipleTransactions(transactions)
             print("Batch sent!")
             transactions = []
             counter = 0
+            batchesCount += 1
         
-    print('Sending batch >>>')
+    print(f"Sending batch {batchesCount} / {batches} ")
     transaction_service.processMultipleTransactions(transactions)
     print("Batch sent!")
     print('Done!')
