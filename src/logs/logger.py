@@ -1,4 +1,3 @@
-import logging  
 import json
 
 class DataProcessingLogger:
@@ -12,7 +11,6 @@ class DataProcessingLogger:
 
     def init_logger(self, log_file: str):
         self.log_file = log_file
-        logging.basicConfig(filename=log_file, level=logging.INFO)
 
     def get_instance():
         return DataProcessingLogger._instance
