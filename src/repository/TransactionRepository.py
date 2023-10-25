@@ -1,9 +1,10 @@
-
+from neo4j import ManagedTransaction
+from src.models.neo4j_models import Transaction
 class TransactionRepository:
     
     # UTIL FUNCTION, IS ADDRESS IN GRAPH ?
     @staticmethod  
-    def _is_address_in_graph(tx, address):
+    def _is_address_in_graph(tx: ManagedTransaction, address: str):
         query = (
             "MATCH (a:Address) WHERE a.address = $address RETURN a"
         )
@@ -13,40 +14,57 @@ class TransactionRepository:
 
     # INSERT NFT INTO GRAPH DATABASE
     @staticmethod
-    def _insert_nft(tx, transaction, nft):
+    def _insert_transaction_with_nft(tx: ManagedTransaction, data: Transaction):
         query = (
-            "MERGE (n:NFT {nft_id: $nft_id}) "
-            "MERGE (t:Transaction {transaction_id: $transaction_id}) "
-            "MERGE (t)-[:NFT]->(n)"
+            "MERGE (n:NFT {nft_id: $nft_id}) - [:NFT] -> (t:Transaction {transaction_id: $transaction_id})"
         )
-        tx.run(query, nft_id=nft, transaction_id=transaction)
+        tx.run(query, nft_id=data.nft_id, transaction_id=data.transaction_id)
+        
+    # INSERT MULTIPLE NFT INTO GRAPH DATABASE
+    @staticmethod
+    def _insert_transactions_with_nft(tx: ManagedTransaction, data: list[Transaction]):
+        query = """
+        UNWIND $props AS data
+        MERGE (n:NFT {nft_id: data.nft_id}) - [:NFT] -> (t:Transaction {transaction_id: data.transaction_id})
+        """
+        tx.run(query, props=[{"nft_id": t.nft_id, "transaction_id":t.transaction_id } for t in data])
 
 
     # INSERT ADDRESS INTO GRAPH DATABASE
     @staticmethod
-    def _insert_address(tx, address):
+    def _insert_address(tx: ManagedTransaction, address: str):
         query = (
             "MERGE (a:Address {address: $address})"
         )
         tx.run(query, address=address)
-
-
-    # CREATE RELATIONSHIP BETWEEN ADDRESSES SENT
+        
+        
+    # INSERT ADDRESSES INTO GRAPH DATABASE
     @staticmethod
-    def _create_sent_relationship(tx, from_address, to_address):
-        query = "MATCH (from:Address), (to:Address) WHERE from.address = $from_address AND to.address = $to CREATE (from)-[:SENT]->(to)"
-        tx.run(query, from_address=from_address, to=to_address)
-
-
-    # CREATE RELATIONSHIP BETWEEN ADDRESSES RECEIVED
+    def _insert_addresses(tx: ManagedTransaction, addresses: list[str]):
+        query = """
+        UNWIND $addresses AS address
+        MERGE (a:Address {address: address})
+        """
+        tx.run(query, addresses=addresses)
+        
+    # CREATE SENT RELATIONSHIP BETWEEN TRANSACTION AND ADDRESSES
     @staticmethod
-    def _create_received_relationship(tx, from_address, to_address):
-        query = "MATCH (from:Address), (to:Address) WHERE from.address = $from_address AND to.address = $to CREATE (from)<-[:RECEIVED]-(to)"
-        tx.run(query, from_address=from_address, to=to_address)
-
-
-    # CREATE RELATIONSHIP BETWEEN TRANSACTION AND NFT
+    def _create_transaction_relationships(tx: ManagedTransaction, data: Transaction):
+        query = "MATCH (tx:Transaction), (from:Address), (to: Address) WHERE tx.transaction_id = $transaction_id AND from.address = $from_address AND to.address = $to_address CREATE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)"
+        tx.run(query,  transaction_id=data.transaction_id, from_address=data.from_address, to_address=data.to_address)
+        
+    
+        
+    # CREATE MULTIPLE SENT RELATIONSHIP BETWEEN TRANSACTION AND ADDRESSES
     @staticmethod
-    def _create_nft_relationship(tx, transaction, nft):
-        query = "MATCH (t:Transaction), (n:NFT) WHERE t.id = $transaction_id AND n.id = $nft_id CREATE (t)-[:NFT]->(n)"
-        tx.run(query, transaction_id=transaction, nft_id=nft)
+    def _create_transaction_relationships_multiple(tx: ManagedTransaction, data: list[Transaction]):
+        query = """
+        UNWIND $props AS data
+        MATCH (tx:Transaction {transaction_id: data.transaction_id}),
+        (from:Address {address: data.from_address}),
+        (to: Address {address: data.to_address})
+        MERGE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)
+        """
+        formatted =[{"nft_id": t.nft_id, "transaction_id":t.transaction_id, "to_address":t.to_address, "from_address":t.from_address } for t in data]
+        tx.run(query, props=formatted)

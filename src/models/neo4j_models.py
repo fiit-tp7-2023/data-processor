@@ -24,6 +24,6 @@ class Transaction(StructuredNode):
     amount = StringProperty()
     from_address = RelationshipTo(Address, 'SENT')
     to_address = RelationshipTo(Address, 'RECEIVED')
-    nft = RelationshipTo(NFT, 'NFT')
+    nft_id = RelationshipTo(NFT, 'NFT')
 
 

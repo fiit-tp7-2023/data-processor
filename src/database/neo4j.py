@@ -1,4 +1,4 @@
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, Driver, ManagedTransaction
 
 class Neo4jDatabase:
     _instance = None
@@ -25,6 +25,6 @@ class Neo4jDatabase:
             session.write_transaction(self._run_query, query)
 
     @staticmethod
-    def _run_query(tx, query):
+    def _run_query(tx: ManagedTransaction, query):
         result = tx.run(query)
         return result

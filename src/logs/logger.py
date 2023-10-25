@@ -1,9 +1,7 @@
-import logging  
 import json
 
 class DataProcessingLogger:
     _instance = None
-    log_file = None
 
     def __new__(cls, log_file):
         if cls._instance is None:
@@ -11,19 +9,16 @@ class DataProcessingLogger:
             cls._instance.init_logger(log_file)
         return cls._instance
 
-    def init_logger(self, log_file):
+    def init_logger(self, log_file: str):
         self.log_file = log_file
-        logging.basicConfig(filename=log_file, level=logging.INFO)
 
     def get_instance():
         return DataProcessingLogger._instance
 
-    def log(self, message):
-        log_file = "src/logs/indexer_data/indexer.log"
-        with open(log_file, 'a') as file:
+    def log(self, message: str):
+        with open(self.log_file, 'a') as file:
             file.write(json.dumps(message) + '\n')
 
     def clear(self):
-        log_file = "src/logs/indexer_data/indexer.log"
-        with open(log_file, 'w') as file:
+        with open(self.log_file, 'w') as file:
             file.write('')
