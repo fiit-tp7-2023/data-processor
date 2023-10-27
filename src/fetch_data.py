@@ -17,6 +17,9 @@ def main():
                 where: {
                     toAddress_not_contains: "0x00",
                     fromAddress_not_contains: "0x00",
+                    nft: {
+                        name_isNull: false
+                    }
                 }
             )
             {
