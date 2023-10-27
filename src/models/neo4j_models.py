@@ -10,10 +10,10 @@ class Address(StructuredNode):
 
 
 class NFT(StructuredNode):
-    id = StringProperty(unique_index=True)
-    name = StringProperty()
-    uri = StringProperty()
-    description = StringProperty()
+    id = StringProperty(unique_index=True, required=True)
+    name = StringProperty(required=False)
+    uri = StringProperty(required=False)
+    description = StringProperty(required=False)
     transactions = Relationship('Transaction', 'NFT')
 
 

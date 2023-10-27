@@ -5,12 +5,33 @@ class TransactionRepository:
 
     # Insert NFTS 
     def _insert_nfts(tx: ManagedTransaction, data: list[NFT]):
-       query = """
-       UNWIND $props AS data
-       MERGE (n:NFT {id: data.nft_id, name: data.nft_name, uri: data.nft_uri, description: data.nft_description})
-       """
-       formatted = [{"nft_id": nft.id, "nft_name": nft.name or " " , "nft_uri": nft.uri or " ", "nft_description": nft.description or " "} for nft in data]
-       tx.run(query, props=formatted)
+        formatted = [{
+                "nft_id": nft.id,
+                "nft_name": nft.name,
+                "nft_uri": nft.uri,
+                "nft_description": nft.description
+            } for nft in data]
+
+        query = """
+        UNWIND $props AS data
+        MERGE (n:NFT {id: data.nft_id})
+        ON CREATE SET
+        %s
+        """
+        set_statements = []
+
+        if any("nft_name" in entry for entry in formatted):
+            set_statements.append("n.name = data.nft_name")
+
+        if any("nft_uri" in entry for entry in formatted):
+            set_statements.append("n.uri = data.nft_uri")
+
+        if any("nft_description" in entry for entry in formatted):
+            set_statements.append("n.description = data.nft_description")
+
+        query = query % ", ".join(set_statements)
+
+        tx.run(query, props=formatted)
 
 
     # INSERT ADDRESSES
