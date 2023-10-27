@@ -29,7 +29,7 @@ class TransactionRepository:
         if any("nft_description" in entry for entry in formatted):
             set_statements.append("n.description = data.nft_description")
 
-        if any("attributes" in entry for entry in formatted):
+        if any("nft_attributes" in entry for entry in formatted):
             set_statements.append("n.attributes = data.nft_attributes")
 
         if len(set_statements) > 0:
