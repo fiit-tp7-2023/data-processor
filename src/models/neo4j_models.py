@@ -14,6 +14,7 @@ class NFT(StructuredNode):
     name = StringProperty(required=False)
     uri = StringProperty(required=False)
     description = StringProperty(required=False)
+    attributes = StringProperty(required=False)
     transactions = Relationship('Transaction', 'NFT')
 
 

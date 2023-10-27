@@ -9,13 +9,13 @@ class TransactionRepository:
                 "nft_id": nft.id,
                 "nft_name": nft.name,
                 "nft_uri": nft.uri,
-                "nft_description": nft.description
+                "nft_description": nft.description,
+                "nft_attributes": nft.attributes
             } for nft in data]
 
         query = """
         UNWIND $props AS data
         MERGE (n:NFT {id: data.nft_id})
-        ON CREATE SET
         %s
         """
         set_statements = []
@@ -29,7 +29,11 @@ class TransactionRepository:
         if any("nft_description" in entry for entry in formatted):
             set_statements.append("n.description = data.nft_description")
 
-        query = query % ", ".join(set_statements)
+        if any("attributes" in entry for entry in formatted):
+            set_statements.append("n.attributes = data.nft_attributes")
+
+        if len(set_statements) > 0:
+            query = query % "SET " + ", ".join(set_statements)
 
         tx.run(query, props=formatted)
 

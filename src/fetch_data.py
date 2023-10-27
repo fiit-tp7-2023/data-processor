@@ -17,7 +17,6 @@ def main():
                 where: {
                     toAddress_not_contains: "0x00",
                     fromAddress_not_contains: "0x00",
-                    
                 }
             )
             {
@@ -30,6 +29,7 @@ def main():
                     name
                     description
                     uri
+                    attributes
                 }
             }
             }
