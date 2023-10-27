@@ -1,70 +1,83 @@
 from neo4j import ManagedTransaction
-from src.models.neo4j_models import Transaction
+from src.models.neo4j_models import Transaction, NFT
 class TransactionRepository:
-    
-    # UTIL FUNCTION, IS ADDRESS IN GRAPH ?
-    @staticmethod  
-    def _is_address_in_graph(tx: ManagedTransaction, address: str):
-        query = (
-            "MATCH (a:Address) WHERE a.address = $address RETURN a"
-        )
-        result = tx.run(query, address=address)
-        return result.single() is not None
 
 
-    # INSERT NFT INTO GRAPH DATABASE
-    @staticmethod
-    def _insert_transaction_with_nft(tx: ManagedTransaction, data: Transaction):
-        query = (
-            "MERGE (n:NFT {nft_id: $nft_id}) - [:NFT] -> (t:Transaction {transaction_id: $transaction_id})"
-        )
-        tx.run(query, nft_id=data.nft_id, transaction_id=data.transaction_id)
-        
-    # INSERT MULTIPLE NFT INTO GRAPH DATABASE
-    @staticmethod
-    def _insert_transactions_with_nft(tx: ManagedTransaction, data: list[Transaction]):
+    # Insert NFTS 
+    def _insert_nfts(tx: ManagedTransaction, data: list[NFT]):
+        formatted = [{
+                "nft_id": nft.id,
+                "nft_name": nft.name,
+                "nft_uri": nft.uri,
+                "nft_description": nft.description,
+                "nft_attributes": nft.attributes
+            } for nft in data]
+
         query = """
         UNWIND $props AS data
-        MERGE (n:NFT {nft_id: data.nft_id}) - [:NFT] -> (t:Transaction {transaction_id: data.transaction_id})
+        MERGE (n:NFT {id: data.nft_id})
+        %s
         """
-        tx.run(query, props=[{"nft_id": t.nft_id, "transaction_id":t.transaction_id } for t in data])
+        set_statements = []
+
+        if any("nft_name" in entry for entry in formatted):
+            set_statements.append("n.name = data.nft_name")
+
+        if any("nft_uri" in entry for entry in formatted):
+            set_statements.append("n.uri = data.nft_uri")
+
+        if any("nft_description" in entry for entry in formatted):
+            set_statements.append("n.description = data.nft_description")
+
+        if any("nft_attributes" in entry for entry in formatted):
+            set_statements.append("n.attributes = data.nft_attributes")
+
+        if len(set_statements) > 0:
+            query = query % "SET " + ", ".join(set_statements)
+
+        tx.run(query, props=formatted)
 
 
-    # INSERT ADDRESS INTO GRAPH DATABASE
-    @staticmethod
-    def _insert_address(tx: ManagedTransaction, address: str):
-        query = (
-            "MERGE (a:Address {address: $address})"
-        )
-        tx.run(query, address=address)
-        
-        
-    # INSERT ADDRESSES INTO GRAPH DATABASE
+    # INSERT ADDRESSES
     @staticmethod
     def _insert_addresses(tx: ManagedTransaction, addresses: list[str]):
         query = """
         UNWIND $addresses AS address
-        MERGE (a:Address {address: address})
+        MERGE (a:Address {id: address})
         """
         tx.run(query, addresses=addresses)
-        
-    # CREATE SENT RELATIONSHIP BETWEEN TRANSACTION AND ADDRESSES
-    @staticmethod
-    def _create_transaction_relationships(tx: ManagedTransaction, data: Transaction):
-        query = "MATCH (tx:Transaction), (from:Address), (to: Address) WHERE tx.transaction_id = $transaction_id AND from.address = $from_address AND to.address = $to_address CREATE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)"
-        tx.run(query,  transaction_id=data.transaction_id, from_address=data.from_address, to_address=data.to_address)
-        
-    
-        
-    # CREATE MULTIPLE SENT RELATIONSHIP BETWEEN TRANSACTION AND ADDRESSES
-    @staticmethod
-    def _create_transaction_relationships_multiple(tx: ManagedTransaction, data: list[Transaction]):
+
+
+    # INSERT ADDRESSES
+    def _insert_transactions(tx: ManagedTransaction, transactions: list[Transaction]):
         query = """
         UNWIND $props AS data
-        MATCH (tx:Transaction {transaction_id: data.transaction_id}),
-        (from:Address {address: data.from_address}),
-        (to: Address {address: data.to_address})
+        MERGE (t:Transaction {id: data.transaction_id, amount: toInteger(data.amount)})
+        """
+        tx.run(query, props=[{"transaction_id":t.transaction_id, "amount": t.amount } for t in transactions])
+
+
+    # Create relation Address <- [:RECEIVED] - Transaction - [:SNET] -> Address
+    @staticmethod
+    def _relation_transaction_address(tx: ManagedTransaction, data: list[Transaction]):
+        query = """
+        UNWIND $props AS data
+        MATCH (tx:Transaction {id: data.transaction_id}),
+        (from:Address {id: data.from_address}),
+        (to: Address {id: data.to_address})
         MERGE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)
         """
-        formatted =[{"nft_id": t.nft_id, "transaction_id":t.transaction_id, "to_address":t.to_address, "from_address":t.from_address } for t in data]
+        formatted =[{"transaction_id":t.transaction_id, "to_address":t.to_address, "from_address":t.from_address } for t in data]
         tx.run(query, props=formatted)
+
+
+    # Create relation Transaction - [:HAS_NFT] -> NFT
+    @staticmethod
+    def _relation_transaction_nft(tx: ManagedTransaction, transactions: list[Transaction]):
+        query = """
+        UNWIND $props AS data
+        MATCH (tx:Transaction {id: data.transaction_id}),
+        (n:NFT {id: data.nft_id})
+        MERGE (n)<-[:HAS_NFT]-(tx)
+        """
+        tx.run(query, props=[{"nft_id": t.nft['id'], "nft_name": t.nft['name'], "nft_uri": t.nft['uri'], "nft_description": t.nft['description'], "transaction_id":t.transaction_id, "amount": t.amount } for t in transactions])

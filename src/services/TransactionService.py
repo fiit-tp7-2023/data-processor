@@ -1,4 +1,4 @@
-from src.models.neo4j_models import Transaction
+from src.models.neo4j_models import Transaction, NFT
 from src.repository.TransactionRepository import TransactionRepository
 from neo4j import Driver
 
@@ -10,47 +10,45 @@ class TransactionService:
         self.driver.close()
         
     def processMultipleTransactions(self, transactions: list[Transaction]):
-        data = []
+        addresses = []
         for t in transactions:
-            data.append(t.from_address)
-            data.append(t.to_address)
+            addresses.append(t.from_address)
+            addresses.append(t.to_address)
             
-        addresses = list(set(data))
+        addresses = list(set(addresses))
+
+        nfts = []
+        for t in transactions:
+            nft = NFT(
+                id=t.nft.get('id', None),
+                name=t.nft.get('name', None),
+                uri=t.nft.get('uri', None),
+                description=t.nft.get('description', None),
+                attributes=str(t.nft.get('attributes', None))
+            )
+            nfts.append(nft)
+
+        self.insert_nfts(nfts)
         self.insert_addresses(addresses)
         self.insert_transactions(transactions)
-
-    def processTransaction(self, transaction: Transaction):
-        
-        if not self.isAddressInGraph(transaction.from_address):
-            self.insert_address(transaction.from_address)
-
-        if not self.isAddressInGraph(transaction.to_address):
-            self.insert_address(transaction.to_address)
-
-        self.insert_transaction(transaction)
+        self.insert_relations(transactions)
             
-    def isAddressInGraph(self, address: str):
-        with self.driver.session() as session:
-            return session.read_transaction(TransactionRepository._is_address_in_graph, address)
-
-
-    def insert_address(self, address: str):
-        with self.driver.session() as session:
-            session.write_transaction(TransactionRepository._insert_address, address)
             
     def insert_addresses(self, addresses: list[str]):
         with self.driver.session() as session:
             session.write_transaction(TransactionRepository._insert_addresses, addresses)
 
-
-    def insert_transaction(self, data: Transaction):
+    def insert_nfts(self, nfts: list[NFT]):
         with self.driver.session() as session:
-            session.write_transaction(TransactionRepository._insert_transaction_with_nft, data)
-            session.write_transaction(TransactionRepository._create_transaction_relationships, data)
+            session.write_transaction(TransactionRepository._insert_nfts, nfts)
 
     def insert_transactions(self, transactions: list[Transaction]):
+         with self.driver.session() as session:
+            session.write_transaction(TransactionRepository._insert_transactions, transactions)
+
+    def insert_relations(self, transactions: list[Transaction]):
         with self.driver.session() as session:
-            session.write_transaction(TransactionRepository._insert_transactions_with_nft, transactions)
-            session.write_transaction(TransactionRepository._create_transaction_relationships_multiple, transactions)
+            session.write_transaction(TransactionRepository._relation_transaction_nft, transactions)
+            session.write_transaction(TransactionRepository._relation_transaction_address, transactions)
 
     
