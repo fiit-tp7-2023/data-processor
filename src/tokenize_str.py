@@ -77,12 +77,6 @@ def tokenize(description: str) -> Dict[str, int]:
 
     freq_dist = nltk.FreqDist(lemmatized_tokens)
 
-    # order by frequency
-    freq_dist = {k: v for k, v in sorted(freq_dist.items(), key=lambda item: item[1], reverse=True)}
-
-    # Print the entire frequency distribution
-    print("Frequency Distribution of Lemmatized Tokens:")
-    for word, freq in freq_dist.items():
-        print(word, ":", freq)
+    return freq_dist
        
 

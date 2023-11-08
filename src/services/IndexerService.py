@@ -11,7 +11,6 @@ class IndexerService:
 
 
     def runQuery(self, query):
-        print(self.indexer_uri+"/graphql")
         raw = requests.post(self.indexer_uri+"/graphql", 
             json = query,
             headers= {

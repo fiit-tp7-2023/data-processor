@@ -1,17 +1,20 @@
 from neo4j import ManagedTransaction
-from src.models.neo4j_models import Transaction, NFT
+from src.models.neo4j_models import Transaction, NFT, Tag
+from typing import List, Tuple
+
+
 class TransactionRepository:
 
 
     # Insert NFTS 
-    def _insert_nfts(tx: ManagedTransaction, data: list[NFT]):
+    def _insert_nfts(tx: ManagedTransaction, data: List[Tuple[NFT, List[Tuple[Tag, int]]]]):
         formatted = [{
                 "nft_id": nft._id,
                 "nft_name": nft.name,
                 "nft_uri": nft.uri,
                 "nft_description": nft.description,
                 "nft_attributes": nft.attributes
-            } for nft in data]
+            } for nft, _ in data]
 
         query = """
         UNWIND $props AS data
@@ -36,6 +39,22 @@ class TransactionRepository:
             query = query % "SET " + ", ".join(set_statements)
 
         tx.run(query, props=formatted)
+        
+        # Now insert tags with relation to NFT
+        query = """
+        UNWIND $props AS data
+        MATCH (n:NFT {id: data.nft_id})
+        MERGE (t:Tag {type: data.tag_type})
+        MERGE (n)-[:TAGGED { value: data.relation_weight }]->(t)
+        """
+        
+        for nft, tags in data:
+            formatted = [{
+                "nft_id": nft._id,
+                "tag_type": tag.type,
+                "relation_weight": weight
+            } for tag, weight in tags]
+            tx.run(query, props=formatted)
 
 
     # INSERT ADDRESSES

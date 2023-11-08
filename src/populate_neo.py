@@ -27,7 +27,6 @@ def main():
             result = src.tokenize_str.tokenize(item['nft']['description'])
             tags = [(Tag(type=tag), value) for (tag, value) in result.items()]
             
-            print(result)
         transaction = Transaction(
             from_address=item['fromAddress'],
             to_address=item['toAddress'],
@@ -36,7 +35,7 @@ def main():
             nft = item['nft']
         )
         counter += 1
-        transactions.append(transaction)
+        transactions.append((transaction, tags))
         if counter == int(batchSize):
             print(f"Sending batch {batchesCount} / {batches} ")
             transaction_service.processMultipleTransactions(transactions)
