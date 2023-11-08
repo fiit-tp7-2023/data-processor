@@ -1,11 +1,10 @@
 
 import json
-import os
+import src.tokenize_str
 from src.services.TransactionService import TransactionService
-from src.models.neo4j_models import Transaction
+from src.models.neo4j_models import Transaction, Tag
 from src.logs.logger import DataProcessingLogger
 from src.database.neo4j import Neo4jDatabase
-import time
 
 #SCRIPT TO INSERT FIRST DATA FROM LOG FILE TO NEO4J
 def main():
@@ -24,6 +23,11 @@ def main():
     transactions = []
     print('Starting...')
     for item in data:
+        if(item['nft']['description']):
+            result = src.tokenize_str.tokenize(item['nft']['description'])
+            tags = [(Tag(type=tag), value) for (tag, value) in result.items()]
+            
+            print(result)
         transaction = Transaction(
             from_address=item['fromAddress'],
             to_address=item['toAddress'],

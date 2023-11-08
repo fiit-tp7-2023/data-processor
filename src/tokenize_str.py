@@ -3,13 +3,14 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
+from typing import Dict, List, Tuple
 
 
 
-def remove_verbs(text):
+def remove_verbs(text: Tuple[str, str]) -> List[str] | None:
     return [word for word, pos in text if pos in ['NN', 'NNS', 'NNPS', 'NNP']]
 
-def nounify(verb_word):
+def nounify(verb_word: str) -> str:
     """ Transform a verb to the closest noun: die -> death """
     verb_synsets = wn.synsets(verb_word)
 
@@ -43,10 +44,7 @@ def nounify(verb_word):
     return result[0][0] if result else None
 
     
-def main():
-    # Example NFT description of monkey business
-    description = "Introducing the 'Celestial Legends' collection, an exclusive series of NFTs that bring the constellations to life. Each NFT in this collection is a unique digital tapestry depicting a zodiac sign transformed into a majestic creature. From the daring Aries Ram, adorned with rubies and wrapped in wisps of white clouds, to the mysterious Pisces Fish, glimmering with scales of sapphire blue and emerald green, swimming in the cosmic ocean. The collection features 12 main pieces, each animated with subtle movements that make the stars twinkle and the creatures breathe. Holders of these NFTs will also receive an augmented reality version, allowing them to project their celestial companions into the real world. The 'Celestial Legends' are not just collectibles; they are interactive pieces of art that offer a gateway to the stars."
-
+def tokenize(description: str) -> Dict[str, int]:
     # Tokenization
     tokens = word_tokenize(description.lower())
 
@@ -63,6 +61,9 @@ def main():
     nouns = [nounify(word) for word in adjs]
 
     filtered_tokens = remove_verbs(filtered_tags)
+    
+    if filtered_tokens is None:
+        filtered_tokens = []
 
     #add nouns to filtered_tokens
     filtered_tokens.extend(nouns)
@@ -85,15 +86,3 @@ def main():
         print(word, ":", freq)
        
 
-
-
-main()
-
-
-
-
-
-# Generate tags (using the lemmatized tokens)
-#tags = list(set(lemmatized_tokens))
-
-#print(tags)

@@ -1,5 +1,3 @@
-import requests
-import os
 from src.logs.logger import DataProcessingLogger
 from src.services.IndexerService import IndexerService
 
@@ -13,7 +11,7 @@ def main():
         "variables": None,
         "query": """query getTransactions {
             nftTransferEntities(
-                limit: 50000,
+                limit: 100,
                 where: {
                     toAddress_not_contains: "0x00",
                     fromAddress_not_contains: "0x00",

@@ -6,7 +6,7 @@ class TransactionRepository:
     # Insert NFTS 
     def _insert_nfts(tx: ManagedTransaction, data: list[NFT]):
         formatted = [{
-                "nft_id": nft.id,
+                "nft_id": nft._id,
                 "nft_name": nft.name,
                 "nft_uri": nft.uri,
                 "nft_description": nft.description,

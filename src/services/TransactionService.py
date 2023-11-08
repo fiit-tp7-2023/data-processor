@@ -20,7 +20,7 @@ class TransactionService:
         nfts = []
         for t in transactions:
             nft = NFT(
-                id=t.nft.get('id', None),
+                _id=t.nft.get('id', None),
                 name=t.nft.get('name', None),
                 uri=t.nft.get('uri', None),
                 description=t.nft.get('description', None),
