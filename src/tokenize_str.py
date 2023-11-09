@@ -3,11 +3,10 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
-from typing import Dict, List, Tuple
 
 
 
-def remove_verbs(text: Tuple[str, str]) -> List[str] | None:
+def remove_verbs(text: tuple[str, str]) -> list[str] | None:
     return [word for word, pos in text if pos in ['NN', 'NNS', 'NNPS', 'NNP']]
 
 def nounify(verb_word: str) -> str:
@@ -44,7 +43,7 @@ def nounify(verb_word: str) -> str:
     return result[0][0] if result else None
 
     
-def tokenize(description: str) -> Dict[str, int]:
+def tokenize(description: str) -> dict[str, int]:
     # Tokenization
     tokens = word_tokenize(description.lower())
 

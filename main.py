@@ -3,7 +3,6 @@ from src import program
 import os
 from dotenv import load_dotenv
 from src.database.neo4j import Neo4jDatabase
-from src.logs.logger import DataProcessingLogger
 if __name__ == "__main__":
 
     load_dotenv()
@@ -12,7 +11,6 @@ if __name__ == "__main__":
     neo4j_password = os.getenv("NEO4J_PASSWORD")
 
     neo4j = Neo4jDatabase(neo4j_uri, neo4j_user, neo4j_password)
-    logfile = DataProcessingLogger("src/logs/indexer_data/indexer.log")
 
     program.Program.run()
 

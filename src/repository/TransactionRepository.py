@@ -1,15 +1,15 @@
 from neo4j import ManagedTransaction
-from src.models.neo4j_models import Transaction, NFT, Tag
-from typing import List, Tuple
+from src.models.neo4j_models import Transaction
+from src.tag_types import NftWithTags, TransactionWithTags
 
 
 class TransactionRepository:
 
 
     # Insert NFTS 
-    def _insert_nfts(tx: ManagedTransaction, data: List[Tuple[NFT, List[Tuple[Tag, int]]]]):
+    def _insert_nfts(tx: ManagedTransaction, data: list[NftWithTags]):
         formatted = [{
-                "nft_id": nft._id,
+                "nft_id": nft.id,
                 "nft_name": nft.name,
                 "nft_uri": nft.uri,
                 "nft_description": nft.description,
@@ -50,8 +50,8 @@ class TransactionRepository:
         
         for nft, tags in data:
             formatted = [{
-                "nft_id": nft._id,
-                "tag_type": tag.type,
+                "nft_id": nft.id,
+                "tag_type": tag,
                 "relation_weight": weight
             } for tag, weight in tags]
             tx.run(query, props=formatted)
@@ -73,12 +73,13 @@ class TransactionRepository:
         UNWIND $props AS data
         MERGE (t:Transaction {id: data.transaction_id, amount: toInteger(data.amount)})
         """
-        tx.run(query, props=[{"transaction_id":t.transaction_id, "amount": t.amount } for t in transactions])
+        
+        tx.run(query, props=[{"transaction_id":t.id, "amount": t.amount } for t in transactions])
 
 
     # Create relation Address <- [:RECEIVED] - Transaction - [:SNET] -> Address
     @staticmethod
-    def _relation_transaction_address(tx: ManagedTransaction, data: list[Transaction]):
+    def _relation_transaction_address(tx: ManagedTransaction, data: list[TransactionWithTags]):
         query = """
         UNWIND $props AS data
         MATCH (tx:Transaction {id: data.transaction_id}),
@@ -86,17 +87,17 @@ class TransactionRepository:
         (to: Address {id: data.to_address})
         MERGE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)
         """
-        formatted =[{"transaction_id":t.transaction_id, "to_address":t.to_address, "from_address":t.from_address } for t in data]
+        formatted =[{"transaction_id":t.id, "to_address":t.to_address, "from_address":t.from_address } for t, _ in data]
         tx.run(query, props=formatted)
 
 
     # Create relation Transaction - [:HAS_NFT] -> NFT
     @staticmethod
-    def _relation_transaction_nft(tx: ManagedTransaction, transactions: list[Transaction]):
+    def _relation_transaction_nft(tx: ManagedTransaction, transactions: list[TransactionWithTags]):
         query = """
         UNWIND $props AS data
         MATCH (tx:Transaction {id: data.transaction_id}),
         (n:NFT {id: data.nft_id})
         MERGE (n)<-[:HAS_NFT]-(tx)
         """
-        tx.run(query, props=[{"nft_id": t.nft['id'], "nft_name": t.nft['name'], "nft_uri": t.nft['uri'], "nft_description": t.nft['description'], "transaction_id":t.transaction_id, "amount": t.amount } for t in transactions])
+        tx.run(query, props=[{"nft_id": nft.id,  "transaction_id":t.id} for t, (nft, _) in transactions])
