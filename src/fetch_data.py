@@ -13,13 +13,10 @@ def main():
         "variables": None,
         "query": """query getTransactions {
             nftTransferEntities(
-                limit: 1000,
+                limit: 5000,
                 where: {
                     toAddress_not_contains: "0x00",
                     fromAddress_not_contains: "0x00",
-                    nft: {
-                        name_isNull: false
-                    }
                 }
             )
             {
