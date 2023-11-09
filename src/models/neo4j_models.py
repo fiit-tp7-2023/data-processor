@@ -1,28 +1,18 @@
-from neomodel import StructuredNode, StringProperty, RelationshipTo, Relationship
-import os
-from neomodel import config
+from dataclasses import dataclass
 
+@dataclass
+class NFT():
+    id: str
+    name: str | None = None
+    uri: str | None = None
+    description: str | None = None
+    attributes: str | None = None
 
-class Address(StructuredNode):
-    id = StringProperty(required=True, index=True, unique=True)
-    transactions_sent = Relationship('Transaction', 'SENT')
-    transactions_received = Relationship('Transaction', 'RECEIVED')
-
-
-class NFT(StructuredNode):
-    id = StringProperty(unique_index=True, required=True)
-    name = StringProperty(required=False)
-    uri = StringProperty(required=False)
-    description = StringProperty(required=False)
-    attributes = StringProperty(required=False)
-    transactions = Relationship('Transaction', 'NFT')
-
-
-class Transaction(StructuredNode):
-    id = StringProperty(unique_index=True)
-    amount = StringProperty()
-    from_address = RelationshipTo(Address, 'SENT')
-    to_address = RelationshipTo(Address, 'RECEIVED')
-    nft_id = RelationshipTo(NFT, 'NFT')
-
+@dataclass
+class Transaction():
+    id: str
+    amount: int
+    from_address: str
+    to_address: str
+   
 
