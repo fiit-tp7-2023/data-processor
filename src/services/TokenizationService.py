@@ -6,6 +6,13 @@ from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
 
 class TokenizationService:
+    lemmatizer: WordNetLemmatizer
+    englishStopword: list[str]
+    def __init__(self) -> None:
+        self.lemmatizer = WordNetLemmatizer()
+        self.englishStopword = stopwords.words('english')
+        pass
+    
     def remove_verbs(self, text: tuple[str, str]) -> list[str] | None:
         return [word for word, pos in text if pos in ['NN', 'NNS', 'NNPS', 'NNP']]
 
@@ -44,7 +51,7 @@ class TokenizationService:
 
         
     def tokenize(self, nft: NFT) -> dict[str, int]:
-        tokenizable_string = None
+        tokenizable_string = ''
         # Check if there is a description
         if(nft.description):
             tokenizable_string += nft.description + ' '
@@ -54,13 +61,13 @@ class TokenizationService:
             tokenizable_string += nft.name + ' '
         # Tokenization
         
-        if(tokenizable_string is None):
+        if(tokenizable_string == ''):
             return dict()
         
         tokens = word_tokenize(tokenizable_string.lower())
 
         # Remove stop words
-        filtered_tokens = [word for word in tokens if not word in stopwords.words('english')]
+        filtered_tokens = [word for word in tokens if not word in self.englishStopword]
 
 
         filtered_tags = nltk.pos_tag(filtered_tokens)
@@ -83,8 +90,7 @@ class TokenizationService:
         filtered_tokens = [word for word in filtered_tokens if word.isalpha()]
 
         # Lemmatization
-        lemmatizer = WordNetLemmatizer()
-        lemmatized_tokens = [lemmatizer.lemmatize(word) for word in filtered_tokens]
+        lemmatized_tokens = [self.lemmatizer.lemmatize(word) for word in filtered_tokens]
 
         freq_dist = nltk.FreqDist(lemmatized_tokens)
 

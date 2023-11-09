@@ -1,5 +1,3 @@
-
-import src.tokenize_str
 from src.services.TransactionService import TransactionService
 from src.services.TokenizationService import TokenizationService
 from src.models.neo4j_models import Transaction, NFT
