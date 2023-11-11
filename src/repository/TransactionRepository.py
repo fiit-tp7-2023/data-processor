@@ -4,21 +4,27 @@ from src.tag_types import NftWithTags, TransactionWithTags
 
 
 class TransactionRepository:
-
-
+    def _init_db(tx: ManagedTransaction):
+        tx.run("CREATE CONSTRAINT address FOR (a:Address) REQUIRE (a.id) IS UNIQUE")
+        tx.run("CREATE CONSTRAINT nft FOR (n:NFT) REQUIRE (n.id) IS UNIQUE")
+        tx.run("CREATE CONSTRAINT tag FOR (t:Tag) REQUIRE (t.type) IS UNIQUE")
+        
     # Insert NFTS 
-    def _insert_nfts(tx: ManagedTransaction, data: list[NftWithTags]):
+    def _insert_nfts(tx: ManagedTransaction, data: list[tuple[NftWithTags, str]]):
         formatted = [{
                 "nft_id": nft.id,
                 "nft_name": nft.name,
                 "nft_uri": nft.uri,
                 "nft_description": nft.description,
-                "nft_attributes": nft.attributes
-            } for nft, _ in data]
+                "nft_attributes": nft.attributes,
+                "transaction_id": transaction_id
+            } for (nft, _), transaction_id in data]
 
         query = """
         UNWIND $props AS data
+        MATCH (t:Transaction {id: data.transaction_id})
         MERGE (n:NFT {id: data.nft_id})
+        MERGE (t)-[:HAS_NFT]->(n)
         %s
         """
         set_statements = []
@@ -36,7 +42,7 @@ class TransactionRepository:
             set_statements.append("n.attributes = data.nft_attributes")
 
         if len(set_statements) > 0:
-            query = query % "SET " + ", ".join(set_statements)
+            query = query % "ON CREATE SET " + ", ".join(set_statements)
 
         tx.run(query, props=formatted)
         
@@ -45,10 +51,10 @@ class TransactionRepository:
         UNWIND $props AS data
         MATCH (n:NFT {id: data.nft_id})
         MERGE (t:Tag {type: data.tag_type})
-        MERGE (n)-[:TAGGED { value: data.relation_weight }]->(t)
+        MERGE (t)<-[:TAGGED { value: data.relation_weight }]-(n)
         """
         
-        for nft, tags in data:
+        for (nft, tags), _ in data:
             formatted = [{
                 "nft_id": nft.id,
                 "tag_type": tag,
@@ -68,36 +74,13 @@ class TransactionRepository:
 
 
     # INSERT ADDRESSES
+    @staticmethod
     def _insert_transactions(tx: ManagedTransaction, transactions: list[Transaction]):
         query = """
         UNWIND $props AS data
-        MERGE (t:Transaction {id: data.transaction_id, amount: toInteger(data.amount)})
+        MATCH (from:Address {id: data.from_address}),
+        (to: Address {id: data.to_address})
+        CREATE (from)-[:SENT]->(t:Transaction {id: data.transaction_id, amount: toInteger(data.amount)})<-[:RECEIVED]-(to)
         """
         
-        tx.run(query, props=[{"transaction_id":t.id, "amount": t.amount } for t in transactions])
-
-
-    # Create relation Address <- [:RECEIVED] - Transaction - [:SNET] -> Address
-    @staticmethod
-    def _relation_transaction_address(tx: ManagedTransaction, data: list[TransactionWithTags]):
-        query = """
-        UNWIND $props AS data
-        MATCH (tx:Transaction {id: data.transaction_id}),
-        (from:Address {id: data.from_address}),
-        (to: Address {id: data.to_address})
-        MERGE (from)-[:SENT]->(tx)<-[:RECEIVED]-(to)
-        """
-        formatted =[{"transaction_id":t.id, "to_address":t.to_address, "from_address":t.from_address } for t, _ in data]
-        tx.run(query, props=formatted)
-
-
-    # Create relation Transaction - [:HAS_NFT] -> NFT
-    @staticmethod
-    def _relation_transaction_nft(tx: ManagedTransaction, transactions: list[TransactionWithTags]):
-        query = """
-        UNWIND $props AS data
-        MATCH (tx:Transaction {id: data.transaction_id}),
-        (n:NFT {id: data.nft_id})
-        MERGE (n)<-[:HAS_NFT]-(tx)
-        """
-        tx.run(query, props=[{"nft_id": nft.id,  "transaction_id":t.id} for t, (nft, _) in transactions])
+        tx.run(query, props=[{"transaction_id":t.id, "to_address":t.to_address, "from_address":t.from_address, "amount": t.amount } for t in transactions])
