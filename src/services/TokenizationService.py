@@ -59,6 +59,11 @@ class TokenizationService:
         # Check if there is a name
         if(nft.name):
             tokenizable_string += nft.name + ' '
+            
+        # Check if there are attributes
+        if(nft.attributes):
+            tokenizable_string += str(nft.attributes) + ' '
+            
         # Tokenization
         
         if(tokenizable_string == ''):

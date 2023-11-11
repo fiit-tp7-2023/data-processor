@@ -21,8 +21,10 @@ class Neo4jDatabase:
     def reset_database(self):
         with self.driver.session() as session:
             # Delete all nodes, relationships, and property keys
-            query = "MATCH (n) DETACH DELETE n"
-            session.write_transaction(self._run_query, query)
+            session.write_transaction(self._run_query, "MATCH (n) DETACH DELETE n")
+            session.write_transaction(self._run_query, "DROP CONSTRAINT address IF EXISTS")
+            session.write_transaction(self._run_query, "DROP CONSTRAINT nft IF EXISTS")
+            session.write_transaction(self._run_query, "DROP CONSTRAINT tag IF EXISTS")
 
     @staticmethod
     def _run_query(tx: ManagedTransaction, query):

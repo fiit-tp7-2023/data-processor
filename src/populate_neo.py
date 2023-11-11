@@ -11,6 +11,7 @@ def main():
     data = DataRepository.get_instance().get_data()
     driver = Neo4jDatabase.get_instance().driver
     transaction_service = TransactionService(driver)
+    transaction_service.init_db()
     tokenization_service = TokenizationService()
     counter = 0
     batchSize = input("Size of batch : ")
