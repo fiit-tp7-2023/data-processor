@@ -17,6 +17,9 @@ class DataRepository:
     def get_data(self) -> list[dict]:
         return self.data
 
+    def get_data_count(self) -> int:
+        return len(self.data)
+
     def save(self, data: dict):
         self.data.append(data)
 
