@@ -5,6 +5,14 @@ from src.tag_types import NftWithTags, TransactionWithTags
 
 class TransactionRepository:
     def _init_db(tx: ManagedTransaction):
+        constraints = tx.run("SHOW CONSTRAINTS")
+        # If constraints already exist, do not create them again
+        if constraints.peek() is not None:
+            return
+
+        tx.run(
+            "CREATE CONSTRAINT transaction FOR (t:Transaction) REQUIRE (t.id) IS UNIQUE"
+        )
         tx.run("CREATE CONSTRAINT address FOR (a:Address) REQUIRE (a.id) IS UNIQUE")
         tx.run("CREATE CONSTRAINT nft FOR (n:NFT) REQUIRE (n.id) IS UNIQUE")
         tx.run("CREATE CONSTRAINT tag FOR (t:Tag) REQUIRE (t.type) IS UNIQUE")
@@ -80,7 +88,7 @@ class TransactionRepository:
         UNWIND $props AS data
         MATCH (from:Address {id: data.from_address}),
         (to: Address {id: data.to_address})
-        CREATE (from)-[:SENT]->(t:Transaction {id: data.transaction_id, amount: toInteger(data.amount)})<-[:RECEIVED]-(to)
+        MERGE (from)-[:SENT]->(t:Transaction {id: data.transaction_id, amount: toInteger(data.amount)})<-[:RECEIVED]-(to)
         """
         
         tx.run(query, props=[{"transaction_id":t.id, "to_address":t.to_address, "from_address":t.from_address, "amount": t.amount } for t in transactions])
