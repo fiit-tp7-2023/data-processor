@@ -48,22 +48,8 @@ class TokenizationService:
         
         # return all the possibilities sorted by probability
         return result[0][0] if result else None
-
-        
-    def tokenize(self, nft: NFT) -> dict[str, int]:
-        tokenizable_string = ''
-        # Check if there is a description
-        if(nft.description):
-            tokenizable_string += nft.description + ' '
-            
-        # Check if there is a name
-        if(nft.name):
-            tokenizable_string += nft.name + ' '
-            
-        # Check if there are attributes
-        if(nft.attributes):
-            tokenizable_string += str(nft.attributes) + ' '
-            
+    
+    def _tokenize(self, tokenizable_string: str) -> dict[str, int]:
         # Tokenization
         
         if(tokenizable_string == ''):
@@ -97,7 +83,32 @@ class TokenizationService:
         # Lemmatization
         lemmatized_tokens = [self.lemmatizer.lemmatize(word) for word in filtered_tokens]
 
-        freq_dist = nltk.FreqDist(lemmatized_tokens)
+        return nltk.FreqDist(lemmatized_tokens)
+    
+    
+    def _parseAttributes(self, attributes: list[dict[str, str]]) -> str:
+        tokenizable_string = ''
+        for attribute in attributes:
+            if(attribute['trait_type']):
+                tokenizable_string += attribute['trait_type'] + ': '
+            if(attribute['value']):
+                tokenizable_string += attribute['value'] + '. '
+        return tokenizable_string
 
-        return freq_dist
+        
+    def tokenize(self, nft: NFT) -> dict[str, int]:
+        tokenizable_string = ''
+        # Check if there is a description
+        if(nft.description):
+            tokenizable_string += nft.description + '. '
+            
+        # Check if there is a name
+        if(nft.name):
+            tokenizable_string += nft.name + '. '
+            
+        # Check if there are attributes
+        if(nft.attributes):
+            tokenizable_string += self._parseAttributes(nft.attributes)
+            
+        return self._tokenize(tokenizable_string)
         

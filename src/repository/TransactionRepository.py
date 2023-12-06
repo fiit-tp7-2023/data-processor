@@ -24,7 +24,7 @@ class TransactionRepository:
                 "nft_name": nft.name,
                 "nft_uri": nft.uri,
                 "nft_description": nft.description,
-                "nft_attributes": nft.attributes,
+                "nft_attributes": str(nft.attributes),
                 "transaction_id": transaction_id
             } for (nft, _), transaction_id in data]
 

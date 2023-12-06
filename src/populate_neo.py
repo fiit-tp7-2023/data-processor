@@ -33,7 +33,7 @@ def main():
             item["nft"]["name"],
             item["nft"]["uri"],
             item["nft"]["description"],
-            str(item["nft"]["attributes"]),
+            item["nft"]["attributes"],
         )
         result = tokenization_service.tokenize(nft)
         tags = [(tag, value) for (tag, value) in result.items()]

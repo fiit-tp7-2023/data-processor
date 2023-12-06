@@ -6,7 +6,7 @@ class NFT():
     name: str | None = None
     uri: str | None = None
     description: str | None = None
-    attributes: str | None = None
+    attributes: tuple[dict] | None = None
 
 @dataclass
 class Transaction():
