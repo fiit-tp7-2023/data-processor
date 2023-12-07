@@ -1,6 +1,6 @@
 from src.services.TransactionService import TransactionService
 from src.services.TokenizationService import TokenizationService
-from src.models.neo4j_models import Transaction, NFT
+from src.models.neo4j_models import Transaction, NFT, Address
 from src.repository.DataRepository import DataRepository
 from src.database.neo4j import Neo4jDatabase
 from src.tag_types import TransactionWithTags
@@ -21,19 +21,33 @@ def main():
     start_time = time.time()
     print("Starting...", len(data))
     for item in data:
+        from_address = Address(
+            address=item["fromAddress"]["id"], 
+            createdAtBlock=item["fromAddress"]["createdAtBlock"]
+        )
+        to_address = Address(
+            address=item["toAddress"]["id"], 
+            createdAtBlock=item["toAddress"]["createdAtBlock"]
+        )
         transaction = Transaction(
-            item["id"],
-            item["amount"],
-            item["fromAddress"]["id"],
-            item["toAddress"]["id"],
+            id=item["id"],
+            amount=item["amount"],
+            from_address=from_address,
+            to_address=to_address,
         )
 
         nft = NFT(
-            item["nft"]["id"],
-            item["nft"]["name"],
-            item["nft"]["uri"],
-            item["nft"]["description"],
-            item["nft"]["attributes"],
+            address=item["nft"]["id"],
+            animationUrl=item["nft"]["animationUrl"],
+            attributes=item["nft"]["attributes"],
+            createdAtBlock=item["nft"]["createdAtBlock"],
+            description=item["nft"]["description"],
+            externalUrl=item["nft"]["externalUrl"],
+            image=item["nft"]["image"],
+            name=item["nft"]["name"],
+            raw=item["nft"]["raw"],
+            tokenId=item["nft"]["tokenId"],
+            uri=item["nft"]["uri"],
         )
         result = tokenization_service.tokenize(nft)
         tags = [(tag, value) for (tag, value) in result.items()]

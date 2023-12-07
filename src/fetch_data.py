@@ -28,6 +28,7 @@ def main(limit: int, offset: int, from_block_id: int):
             amount
             fromAddress {
                 id
+                createdAtBlock
             }
             nft {
                 id
@@ -35,9 +36,16 @@ def main(limit: int, offset: int, from_block_id: int):
                 attributes
                 description
                 uri
+                tokenId
+                image
+                raw
+                externalUrl
+                createdAtBlock
+                animationUrl
             }
             toAddress {
                 id
+                createdAtBlock
             }
         }
     }
