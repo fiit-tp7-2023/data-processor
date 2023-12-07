@@ -1,4 +1,4 @@
-from src.models.neo4j_models import Transaction, NFT
+from src.models.neo4j_models import Transaction, NFT, Address
 from src.repository.TransactionRepository import TransactionRepository
 from src.tag_types import  NftWithTags, TransactionWithTags
 from neo4j import Driver
@@ -15,11 +15,12 @@ class TransactionService:
             session.write_transaction(TransactionRepository._init_db)
         
     def processMultipleTransactions(self, transactions: list[TransactionWithTags]):
-        addresses: list[str] = []
+        addresses: list[Address] = []
         for transaction, _ in transactions:
             addresses.append(transaction.from_address)
             addresses.append(transaction.to_address)
-        addresses = list(set(addresses))
+        used = set()
+        addresses = [x for x in addresses if x.address not in used and (used.add(x.address) or True)]
 
         nfts: list[NftWithTags] = []
         pure_transactions: list[Transaction] = []
