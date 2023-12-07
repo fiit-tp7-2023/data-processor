@@ -19,13 +19,13 @@ def main():
     batchesCount = 1
     transactionsWithTags: list[TransactionWithTags] = []
     start_time = time.time()
-    print("Starting...")
+    print("Starting...", len(data))
     for item in data:
         transaction = Transaction(
             item["id"],
             item["amount"],
-            item["fromAddress"],
-            item["toAddress"],
+            item["fromAddress"]["id"],
+            item["toAddress"]["id"],
         )
 
         nft = NFT(
@@ -40,7 +40,7 @@ def main():
 
         counter += 1
         transactionsWithTags.append((transaction, (nft, tags)))
-        if counter == int(batchSize):
+        if counter == batchSize:
             print(f"Sending batch {batchesCount} / {batches} ")
             transaction_service.processMultipleTransactions(transactionsWithTags)
             end_time = time.time()

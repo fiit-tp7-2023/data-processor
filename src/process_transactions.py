@@ -19,7 +19,7 @@ def main():
         offset += limit
         total_processed += repo.get_data_count()
         populate_neo()
-        print(f"Total processed: {total_processed}")
+        print(f"Total processed: {total_processed} (offset: {offset}))")
         repo.clear()
 
         print("Fetching data...")

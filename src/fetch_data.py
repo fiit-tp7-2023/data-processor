@@ -14,25 +14,33 @@ def main(limit: int, offset: int, from_block_id: int):
             limit: $limit,
             offset: $offset,
             where: {
-                toAddress_not_contains: "0x00",
-                fromAddress_not_contains: "0x00",
+                toAddress: {
+                    id_not_startsWith: "0x00"
+                }, 
+                fromAddress: {
+                    id_not_startsWith: "0x00"
+                },
                 createdAtBlock_gt : $blockId
             }
 
         ) {
-            amount
             id
-            fromAddress
-            toAddress
+            amount
+            fromAddress {
+                id
+            }
             nft {
                 id
                 name
+                attributes
                 description
                 uri
-                attributes
+            }
+            toAddress {
+                id
             }
         }
-        }
+    }
     """
 
     variables = {"blockId": from_block_id, "limit": limit, "offset": offset}
