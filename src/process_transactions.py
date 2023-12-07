@@ -1,27 +1,46 @@
 from src.services.IndexerService import IndexerService
+from src.services.TransactionService import TransactionService
+from src.services.TokenizationService import TokenizationService
+from src.database.neo4j import Neo4jDatabase
 from src.repository.DataRepository import DataRepository
-from src.populate_neo import main as populate_neo
-from src.fetch_data import main as fetch_data
+from src.tag_types import NftWithTags, TagWithValue
 
 
 def main():
-    repo: DataRepository = DataRepository.get_instance()
+    indexer_service = IndexerService()
+    tokenization_service = TokenizationService()
+    transaction_service = TransactionService(Neo4jDatabase.get_instance().driver)
+    repo = DataRepository.get_instance()
+    
     repo.clear()
-
-    offset = 0
-    limit = 3000
-    from_block_id = 1
-    total_processed = 0
-    print("Fetching data...")
-    fetch_data(limit, offset, from_block_id)
-    print("Data fetched successfully")
-    while repo.get_data_count() > 0:
-        offset += limit
-        total_processed += repo.get_data_count()
-        populate_neo()
-        print(f"Total processed: {total_processed} (offset: {offset}))")
-        repo.clear()
-
+    start_block = int(input("Start block: "))
+    block_count = int(input("Block batch count: "))
+    tx_limit = int(input("Transaction batch count: "))
+    while True:
+        offset = 0
         print("Fetching data...")
-        fetch_data(limit, offset, from_block_id)
+        users = indexer_service.fetchUsers(start_block, start_block + block_count)
+        transaction_service.insert_addresses(users)
+        
+        nfts = indexer_service.fetchTokens(start_block, start_block + block_count)
+        processed_nfts: list[NftWithTags] = []
+        for nft in nfts:
+            tags: list[TagWithValue] = [(tag, value) for (tag, value) in tokenization_service.tokenize(nft).items()]
+            processed_nfts.append((nft, tags))
+            
+        
+        transaction_service.insert_nfts(processed_nfts)
+        
+        transfers = indexer_service.fetchTransfers(start_block, start_block + block_count, offset, tx_limit)
+        repo.save(transfers)
         print("Data fetched successfully")
+        while repo.has_transfers():
+            print(f"[TX] {offset} - {offset + tx_limit}")
+            transaction_service.populate_db(tx_limit)
+            repo.clear()
+            print("Fetching data...")
+            offset += tx_limit
+            transfers = indexer_service.fetchTransfers(start_block, start_block + block_count, offset, tx_limit)
+            print("Data fetched successfully")
+        start_block += block_count
+        print(f"Next blocks: {start_block} - {start_block + block_count}")
