@@ -2,10 +2,15 @@ from src.models.neo4j_models import Transaction, NFT, Address
 from src.repository.TransactionRepository import TransactionRepository
 from src.tag_types import  NftWithTags, TransactionWithTags
 from neo4j import Driver
+from src.repository.DataRepository import DataRepository
+from src.services.TokenizationService import TokenizationService
+import time
 
 class TransactionService:
     def __init__(self, db_driver: Driver):
         self.driver = db_driver
+        self.data_repository = DataRepository.get_instance()
+        self.tokenization_service = TokenizationService()
 
     def close(self):
         self.driver.close()
@@ -13,27 +18,29 @@ class TransactionService:
     def init_db(self):
         with self.driver.session() as session:
             session.write_transaction(TransactionRepository._init_db)
+            
+    def populate_db(self):
+        data = self.data_repository.get_transfers()
+        transactions: list[Transaction] = []
+        start_time = time.time()
+        print(f"Processing {len(data)} transfers")
+        for item in data:
+            transactions.append(Transaction(
+                id=item["id"],
+                amount=item["amount"],
+                from_address=item["fromAddress"]["id"],
+                to_address=item["toAddress"]["id"],
+                nft_address=item["nft"]["id"]
+            ))
         
-    def processMultipleTransactions(self, transactions: list[TransactionWithTags]):
-        addresses: list[Address] = []
-        for transaction, _ in transactions:
-            addresses.append(transaction.from_address)
-            addresses.append(transaction.to_address)
-        used = set()
-        addresses = [x for x in addresses if x.address not in used and (used.add(x.address) or True)]
-
-        nfts: list[NftWithTags] = []
-        pure_transactions: list[Transaction] = []
-        for transaction, (nft, tags) in transactions:
-            pure_transactions.append(transaction)
-            nfts.append(((nft, tags), transaction.id))
-
-        self.insert_addresses(addresses)
-        self.insert_transactions(pure_transactions)
-        self.insert_nfts(nfts)
+        self.insert_transactions(transactions)
+        end_time = time.time()
+        print(f"Finished populating in {end_time - start_time} seconds")
+        
+        
             
             
-    def insert_addresses(self, addresses: list[str]):
+    def insert_addresses(self, addresses: list[Address]):
         with self.driver.session() as session:
             session.write_transaction(TransactionRepository._insert_addresses, addresses)
 

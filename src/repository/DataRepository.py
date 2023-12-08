@@ -1,8 +1,9 @@
 from typing import Self
+from src.models.neo4j_models import Address
 
 class DataRepository:
     _instance = None
-    data: list[dict] = []
+    transfers: list[dict] = []
 
     def __new__(cls):
         if cls._instance is None:
@@ -14,14 +15,14 @@ class DataRepository:
             DataRepository._instance = DataRepository()
         return DataRepository._instance
     
-    def get_data(self) -> list[dict]:
-        return self.data
+    def get_transfers(self) -> list[dict]:
+        return self.transfers
 
-    def get_data_count(self) -> int:
-        return len(self.data)
+    def has_transfers(self) -> int:
+        return len(self.transfers) > 0
 
-    def save(self, data: dict):
-        self.data.append(data)
+    def save(self, transfers: dict):
+        self.transfers.extend(transfers)
 
     def clear(self):
-        self.data = []
+        self.transfers = []

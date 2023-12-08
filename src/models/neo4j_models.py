@@ -23,7 +23,8 @@ class Address():
 class Transaction():
     id: str
     amount: int
-    from_address: Address
-    to_address: Address
+    nft_address: str
+    from_address: str
+    to_address: str
    
 

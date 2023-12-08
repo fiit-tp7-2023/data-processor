@@ -18,7 +18,7 @@ class TransactionRepository:
         tx.run("CREATE CONSTRAINT tag FOR (t:Tag) REQUIRE (t.type) IS UNIQUE")
         
     # Insert NFTS 
-    def _insert_nfts(tx: ManagedTransaction, data: list[tuple[NftWithTags, str]]):
+    def _insert_nfts(tx: ManagedTransaction, data: list[NftWithTags]):
         formatted = [{
                 "nft_address": nft.address,
                 "nft_token_id": nft.tokenId,
@@ -31,15 +31,11 @@ class TransactionRepository:
                 "nft_animation_url": nft.animationUrl,
                 "nft_description": nft.description,
                 "nft_attributes": str(nft.attributes),
-                "transaction_id": transaction_id
-            } for (nft, _), transaction_id in data]
+            } for (nft, _) in data]
 
         query = """
         UNWIND $props AS data
-        MATCH (t:Transaction {id: data.transaction_id})
-        MERGE (n:NFT {address: data.nft_address})
-        MERGE (t)-[:HAS_NFT]->(n)
-        %s
+        CREATE (n:NFT {address: data.nft_address})
         """
         set_statements = []
 
@@ -75,7 +71,7 @@ class TransactionRepository:
             
 
         if len(set_statements) > 0:
-            query = query % "ON CREATE SET " + ", ".join(set_statements)
+            query += " SET "+ ", ".join(set_statements)
 
         tx.run(query, props=formatted)
         
@@ -84,10 +80,10 @@ class TransactionRepository:
         UNWIND $props AS data
         MATCH (n:NFT {address: data.nft_address})
         MERGE (t:Tag {type: data.tag_type})
-        MERGE (t)<-[:TAGGED { value: data.relation_weight }]-(n)
+        CREATE (t)<-[:TAGGED { value: data.relation_weight }]-(n)
         """
         
-        for (nft, tags), _ in data:
+        for (nft, tags) in data:
             formatted = [{
                 "nft_address": nft.address,
                 "tag_type": tag,
@@ -101,7 +97,7 @@ class TransactionRepository:
     def _insert_addresses(tx: ManagedTransaction, addresses: list[Address]):
         query = """
         UNWIND $props AS data
-        MERGE (a:Address {address: data.address, createdAtBlock: data.createdAtBlock})
+        CREATE (a:Address {address: data.address, createdAtBlock: data.createdAtBlock})
         """
         tx.run(query, props=[{"address":a.address, "createdAtBlock":a.createdAtBlock} for a in addresses])
 
@@ -112,8 +108,10 @@ class TransactionRepository:
         query = """
         UNWIND $props AS data
         MATCH (from:Address {address: data.from_address}),
-        (to: Address {address: data.to_address})
-        MERGE (from)-[:SENT]->(t:Transaction {id: data.transaction_id, amount: toInteger(data.amount)})<-[:RECEIVED]-(to)
+              (to: Address {address: data.to_address}),
+              (n:NFT {address: data.nft_address})
+        CREATE (from)-[:SENT]->(t:Transaction {id: data.transaction_id, amount: toInteger(data.amount)})<-[:RECEIVED]-(to),
+               (t)-[:HAS_NFT]->(n)
         """
         
-        tx.run(query, props=[{"transaction_id":t.id, "to_address": t.to_address.address , "from_address":t.from_address.address, "amount": t.amount } for t in transactions])
+        tx.run(query, props=[{"transaction_id":t.id, "to_address": t.to_address , "from_address":t.from_address, "nft_address": t.nft_address , "amount": t.amount } for t in transactions])
