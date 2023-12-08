@@ -111,7 +111,7 @@ class TransactionRepository:
         (to: Address {address: data.to_address}),
         (n:NFT {address: data.nft_address})
         MERGE (from)-[:SENT]->(t:Transaction {id: data.transaction_id, amount: toInteger(data.amount)})<-[:RECEIVED]-(to)
-        MERGE (n)-[:HAS_NFT]->(t)
+        MERGE (t)-[:HAS_NFT]->(n)
         """
         
         tx.run(query, props=[{"transaction_id":t.id, "to_address": t.to_address , "from_address":t.from_address, "nft_address": t.nft_address , "amount": t.amount } for t in transactions])
