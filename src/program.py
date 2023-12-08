@@ -1,10 +1,6 @@
-from src import fetch_data
-from src import populate_neo
 from src.database.neo4j import Neo4jDatabase
 from src.services.TransactionService import TransactionService
 from src import process_transactions
-import json
-from typing import Dict, Tuple
 from src.models.neo4j_models import NFT
 
 class Program:

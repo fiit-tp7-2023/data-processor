@@ -19,16 +19,12 @@ class TransactionService:
         with self.driver.session() as session:
             session.write_transaction(TransactionRepository._init_db)
             
-    def populate_db(self, batchSize:int):
+    def populate_db(self):
         data = self.data_repository.get_transfers()
-        counter = 0
-        batches = len(data) // int(batchSize)
-        batchesCount = 1
         transactions: list[Transaction] = []
         start_time = time.time()
-        print("Starting...", len(data))
+        print(f"Processing {len(data)} transfers")
         for item in data:
-            
             transactions.append(Transaction(
                 id=item["id"],
                 amount=item["amount"],
@@ -36,28 +32,10 @@ class TransactionService:
                 to_address=item["toAddress"]["id"],
                 nft_address=item["nft"]["id"]
             ))
-
-
-            counter += 1
-            if counter == batchSize:
-                print(f"Sending batch {batchesCount} / {batches} ")
-                self.insert_transactions(transactions)
-                end_time = time.time()
-                print(
-                    f"Processed {batchesCount} / {len(data)} in {end_time - start_time} seconds"
-                )
-                transactions = []
-                counter = 0
-                batchesCount += 1
-                start_time = time.time()
-
-        if len(transactions) > 0:
-            print(f"Sending batch {batchesCount} / {batches} ")
-            self.insert_transactions(transactions)
-            print("Batch sent!")
-            end_time = time.time()
-            print(f"Processed {counter} / {len(data)} in {end_time - start_time} seconds")
-            print("Done!")
+        
+        self.insert_transactions(transactions)
+        end_time = time.time()
+        print(f"Finished populating in {end_time - start_time} seconds")
         
         
             

@@ -4,6 +4,7 @@ from src.services.TokenizationService import TokenizationService
 from src.database.neo4j import Neo4jDatabase
 from src.repository.DataRepository import DataRepository
 from src.tag_types import NftWithTags, TagWithValue
+import time
 
 
 def main():
@@ -13,34 +14,47 @@ def main():
     repo = DataRepository.get_instance()
     
     repo.clear()
-    start_block = int(input("Start block: "))
+    start_raw = input("Start block (12337801): ")
+    if start_raw == "":
+        start_block = 12337801
+    else:
+        start_block = int(start_raw)
     block_count = int(input("Block batch count: "))
     tx_limit = int(input("Transaction batch count: "))
     while True:
         offset = 0
-        print("Fetching data...")
-        users = indexer_service.fetchUsers(start_block, start_block + block_count)
-        transaction_service.insert_addresses(users)
+        transfers = indexer_service.fetchTransfers(start_block, start_block + block_count, offset, tx_limit)
+        if len(transfers) == 0:
+            start_block += block_count
+            continue
         
+        
+        print(f"Blocks: {start_block} - {start_block + block_count}")
+            
+        print("Fetching users...")
+        users = indexer_service.fetchUsers(start_block, start_block + block_count)
+        print("Users fetched successfully")
+        transaction_service.insert_addresses(users)
+        print("Users inserted successfully")
+        print("Fetching tokens...")
         nfts = indexer_service.fetchTokens(start_block, start_block + block_count)
         processed_nfts: list[NftWithTags] = []
+        print(f"Tokenizing {len(nfts)} nfts...")
+        start = time.time()
         for nft in nfts:
             tags: list[TagWithValue] = [(tag, value) for (tag, value) in tokenization_service.tokenize(nft).items()]
             processed_nfts.append((nft, tags))
-            
-        
+        end = time.time()
+        print(f"Tokenization done in {end - start} seconds")
         transaction_service.insert_nfts(processed_nfts)
-        
-        transfers = indexer_service.fetchTransfers(start_block, start_block + block_count, offset, tx_limit)
+        print("Tokens inserted successfully")
+        batch_count = 0
         repo.save(transfers)
-        print("Data fetched successfully")
         while repo.has_transfers():
-            print(f"[TX] {offset} - {offset + tx_limit}")
-            transaction_service.populate_db(tx_limit)
+            batch_count += 1
+            print(f"Processing transfers in batch {batch_count}...")
+            transaction_service.populate_db()
             repo.clear()
-            print("Fetching data...")
             offset += tx_limit
-            transfers = indexer_service.fetchTransfers(start_block, start_block + block_count, offset, tx_limit)
-            print("Data fetched successfully")
+            repo.save(indexer_service.fetchTransfers(start_block, start_block + block_count, offset, tx_limit))
         start_block += block_count
-        print(f"Next blocks: {start_block} - {start_block + block_count}")
