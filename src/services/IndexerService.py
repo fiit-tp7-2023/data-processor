@@ -17,10 +17,12 @@ class IndexerService:
         return raw.json()
     
     
-    def fetch_users(self, block_start: int, block_end: int) -> list[Address]:
+    def fetch_users(self, block_start: int, block_end: int, offset: int, limit: int) -> list[Address]:
         query = """
-            query getUsers($blockStart: Int!, $blockEnd: Int!) {
+            query getUsers($blockStart: Int!, $blockEnd: Int!, $limit: Int!, $offset: Int!) {
                 accountEntities(
+                    limit: $limit,
+                    offset: $offset,
                     where: {createdAtBlock_gte: $blockStart, createdAtBlock_lt: $blockEnd, id_not_startsWith: "0x00"}, 
                     orderBy: createdAtBlock_ASC
                 ){
@@ -30,14 +32,16 @@ class IndexerService:
             }
         """
 
-        parsed = self.run_query(query, {"blockStart": block_start, "blockEnd": block_end})
+        parsed = self.run_query(query, {"blockStart": block_start, "blockEnd": block_end, "limit": limit, "offset": offset})
         users = parsed["data"]["accountEntities"]
         return [Address(user["id"], user["createdAtBlock"]) for user in users]
     
-    def fetch_tokens(self, block_start: int, block_end: int) -> list[NFT]:
+    def fetch_tokens(self, block_start: int, block_end: int, offset: int, limit: int) -> list[NFT]:
         query = """
-            query getTokens($blockStart: Int!, $blockEnd: Int!) {
+            query getTokens($blockStart: Int!, $blockEnd: Int!, $limit: Int!, $offset: Int!) {
                 nftEntities(
+                    limit: $limit,
+                    offset: $offset,
                     where: {createdAtBlock_gte: $blockStart, createdAtBlock_lt: $blockEnd}, 
                     orderBy: createdAtBlock_ASC
                 ) {
@@ -56,7 +60,7 @@ class IndexerService:
             }
         """
         
-        parsed = self.run_query(query, {"blockStart": block_start, "blockEnd": block_end})
+        parsed = self.run_query(query, {"blockStart": block_start, "blockEnd": block_end, "limit": limit, "offset": offset})
         raw_nfts = parsed["data"]["nftEntities"]
         nfts = []
         for nft in raw_nfts:
