@@ -20,14 +20,14 @@ class IndexerService:
     def fetch_users(self, block_start: int, block_end: int) -> list[Address]:
         query = """
             query getUsers($blockStart: Int!, $blockEnd: Int!) {
-            accountEntities(
-                where: {createdAtBlock_gte: $blockStart, createdAtBlock_lt: $blockEnd, id_not_startsWith: "0x00"}, 
-                orderBy: createdAtBlock_ASC
-            ){
-                id
-                createdAtBlock
+                accountEntities(
+                    where: {createdAtBlock_gte: $blockStart, createdAtBlock_lt: $blockEnd, id_not_startsWith: "0x00"}, 
+                    orderBy: createdAtBlock_ASC
+                ){
+                    id
+                    createdAtBlock
+                }
             }
-        }
         """
 
         parsed = self.run_query(query, {"blockStart": block_start, "blockEnd": block_end})
@@ -78,35 +78,29 @@ class IndexerService:
     def fetch_transfers(self, block_start:int, block_end: int, offset: int, limit: int) -> list[dict]:
         query = """
             query getTransactions($blockStart: Int!, $blockEnd: Int!, $limit: Int!, $offset: Int!) {
-            nftTransferEntities(
-                orderBy: createdAtBlock_ASC
-                limit: $limit,
-                offset: $offset,
-                where: {
-                    toAddress: {
-                        id_not_startsWith: "0x00"
-                    }, 
-                    fromAddress: {
-                        id_not_startsWith: "0x00"
-                    },
-                    createdAtBlock_gt : $blockStart,
-                    createdAtBlock_lt : $blockEnd
-                }
+                nftTransferEntities(
+                    orderBy: createdAtBlock_ASC
+                    limit: $limit,
+                    offset: $offset,
+                    where: {
+                        createdAtBlock_gte : $blockStart,
+                        createdAtBlock_lt : $blockEnd
+                    }
 
-            ) {
-                id
-                amount
-                fromAddress {
+                ) {
                     id
-                }
-                nft {
-                    id
-                }
-                toAddress {
-                    id
+                    amount
+                    fromAddress {
+                        id
+                    }
+                    nft {
+                        id
+                    }
+                    toAddress {
+                        id
+                    }
                 }
             }
-        }
         """
         variables = {"blockStart": block_start, "blockEnd": block_end, "limit": limit, "offset": offset}
         parsed = self.run_query(query, variables)
