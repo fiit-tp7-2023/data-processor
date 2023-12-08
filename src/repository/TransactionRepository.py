@@ -71,7 +71,7 @@ class TransactionRepository:
             
 
         if len(set_statements) > 0:
-            query + " SET "+ ", ".join(set_statements)
+            query += " SET "+ ", ".join(set_statements)
 
         tx.run(query, props=formatted)
         

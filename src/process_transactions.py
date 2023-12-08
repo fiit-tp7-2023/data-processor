@@ -23,7 +23,7 @@ def main():
     tx_limit = int(input("Transaction batch count: "))
     while True:
         offset = 0
-        transfers = indexer_service.fetchTransfers(start_block, start_block + block_count, offset, tx_limit)
+        transfers = indexer_service.fetch_transfers(start_block, start_block + block_count, offset, tx_limit)
         if len(transfers) == 0:
             start_block += block_count
             continue
@@ -32,12 +32,12 @@ def main():
         print(f"Blocks: {start_block} - {start_block + block_count}")
             
         print("Fetching users...")
-        users = indexer_service.fetchUsers(start_block, start_block + block_count)
+        users = indexer_service.fetch_users(start_block, start_block + block_count)
         print("Users fetched successfully")
         transaction_service.insert_addresses(users)
         print("Users inserted successfully")
         print("Fetching tokens...")
-        nfts = indexer_service.fetchTokens(start_block, start_block + block_count)
+        nfts = indexer_service.fetch_tokens(start_block, start_block + block_count)
         processed_nfts: list[NftWithTags] = []
         print(f"Tokenizing {len(nfts)} nfts...")
         start = time.time()
@@ -56,5 +56,5 @@ def main():
             transaction_service.populate_db()
             repo.clear()
             offset += tx_limit
-            repo.save(indexer_service.fetchTransfers(start_block, start_block + block_count, offset, tx_limit))
+            repo.save(indexer_service.fetch_transfers(start_block, start_block + block_count, offset, tx_limit))
         start_block += block_count
