@@ -1,12 +1,21 @@
 from neo4j import ManagedTransaction
 from src.models.neo4j_models import Transaction
-from src.tag_types import NftWithTags, TransactionWithTags
+from src.tag_types import NftWithTags, TransactionWithTags, TransactionWithToken
 
 
 class TransactionRepository:
 
+    # INSERT TOKENS
+    @staticmethod
+    def _insert_tokens(tx: ManagedTransaction, tokens: list[str]):
+        query = """
+        UNWIND $props AS data
+        MERGE (t:Token {id: data.id, name: data.name})
+        """
+        tx.run(query, props=[{"id": t.id, "name": t.name} for t in tokens])
 
     # Insert NFTS 
+    @staticmethod
     def _insert_nfts(tx: ManagedTransaction, data: list[NftWithTags]):
         formatted = [{
                 "nft_id": nft.id,
@@ -89,6 +98,17 @@ class TransactionRepository:
         """
         formatted =[{"transaction_id":t.id, "to_address":t.to_address, "from_address":t.from_address } for t, _ in data]
         tx.run(query, props=formatted)
+
+    # Create relation Transaction - [:HAS_TOKEN] -> Token
+    @staticmethod
+    def _relation_transaction_token(tx: ManagedTransaction, data: list[TransactionWithToken]):
+        query = """
+        UNWIND $props AS data
+        MATCH (tx:Transaction {id: data.transaction_id}),
+        (t:Token {id: data.token_id})
+        MERGE (t)<-[:HAS_TOKEN]-(tx)
+        """
+        tx.run(query, props=[{"token_id": token.id,  "transaction_id":transaction.id} for transaction, token in data])
 
 
     # Create relation Transaction - [:HAS_NFT] -> NFT

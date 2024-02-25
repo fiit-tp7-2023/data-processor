@@ -14,5 +14,10 @@ class Transaction():
     amount: int
     from_address: str
     to_address: str
+
+@dataclass
+class Token():
+    id: str
+    name: str | None = None
    
 

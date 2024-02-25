@@ -1,4 +1,4 @@
-from src.models.neo4j_models import Transaction, NFT
+from src.models.neo4j_models import Transaction, NFT, Token
 from src.repository.TransactionRepository import TransactionRepository
 from src.tag_types import  NftWithTags, TransactionWithTags
 from neo4j import Driver
@@ -33,6 +33,11 @@ class TransactionService:
     def insert_addresses(self, addresses: list[str]):
         with self.driver.session() as session:
             session.write_transaction(TransactionRepository._insert_addresses, addresses)
+    
+    def insert_tokens(self, tokens: list[Token]):
+        with self.driver.session() as session:
+            session.write_transaction(TransactionRepository._insert_tokens, tokens)
+        
 
     def insert_nfts(self, nfts: list[NftWithTags]):
         with self.driver.session() as session:
