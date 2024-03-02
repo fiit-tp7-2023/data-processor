@@ -2,7 +2,6 @@ from src import program
 import os
 from dotenv import load_dotenv
 from src.database.neo4j import Neo4jDatabase
-from src.database.postgres import PostgresConnection
 
 
 if __name__ == "__main__":
@@ -13,11 +12,11 @@ if __name__ == "__main__":
 
     neo4j = Neo4jDatabase(neo4j_uri, neo4j_user, neo4j_password)
 
-    postgres = PostgresConnection(
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-        host=os.getenv("POSTGRES_HOST"),
-        port=os.getenv("POSTGRES_PORT"),
-        database=os.getenv("POSTGRES_DB"),
-    )
+    # postgres = PostgresConnection(
+    #     user=os.getenv("POSTGRES_USER"),
+    #     password=os.getenv("POSTGRES_PASSWORD"),
+    #     host=os.getenv("POSTGRES_HOST"),
+    #     port=os.getenv("POSTGRES_PORT"),
+    #     database=os.getenv("POSTGRES_DB"),
+    # )
     program.Program.run_server()
