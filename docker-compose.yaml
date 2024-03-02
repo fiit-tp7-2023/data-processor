@@ -5,6 +5,12 @@ networks:
 services:
   data-processor:
     build: .
+    environment:
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+    env_file:
+      - .env
     container_name: data-processor
     image: data-processor
     restart: unless-stopped
