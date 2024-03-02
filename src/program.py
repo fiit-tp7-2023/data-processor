@@ -3,6 +3,7 @@ from src.services.TransactionService import TransactionService
 from src import process_transactions
 from src.models.neo4j_models import NFT
 
+
 class Program:
     def run():
         driver = Neo4jDatabase.get_instance().driver
@@ -33,17 +34,37 @@ class Program:
             elif option == "3":
                 print("Exiting program...")
                 break
-            
+
             elif option == "4":
                 print("Trying tokenization...")
                 nft = NFT(
                     id="1",
                     name="Graphene Batteries",
-                    description= "They are more of a slow release explosion than a battery. Comprised of highly volatile chemicals, it has a singular cycle life and outputs immense amounts of energy. Handle with fear lest we all feel the catastrophic consequences. ",
+                    description="They are more of a slow release explosion than a battery. Comprised of highly volatile chemicals, it has a singular cycle life and outputs immense amounts of energy. Handle with fear lest we all feel the catastrophic consequences. ",
                     uri="uri",
-                    attributes=[{"key": "Rarity", "value": "Uncommon", "trait_type": "Rarity"}, {"key": "Class", "value": "First Edition", "trait_type": "Class"}, {"key": "Artist", "value": "Oscar Mar", "trait_type": "Artist"}, {"key": "Parallel", "value": "Augencore", "trait_type": "Parallel"}] 
+                    attributes=[
+                        {"key": "Rarity", "value": "Uncommon", "trait_type": "Rarity"},
+                        {
+                            "key": "Class",
+                            "value": "First Edition",
+                            "trait_type": "Class",
+                        },
+                        {"key": "Artist", "value": "Oscar Mar", "trait_type": "Artist"},
+                        {
+                            "key": "Parallel",
+                            "value": "Augencore",
+                            "trait_type": "Parallel",
+                        },
+                    ],
                 )
                 from src.services.TokenizationService import TokenizationService
+
                 tokenization_service = TokenizationService()
                 print(len(tokenization_service.tokenize(nft).items()))
                 print("\nTokenization done successfully\n")
+
+    def run_server():
+        driver = Neo4jDatabase.get_instance().driver
+        transaction_service = TransactionService(driver)
+        transaction_service.init_db()
+        process_transactions.main_server()

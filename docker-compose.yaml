@@ -1,0 +1,12 @@
+networks:
+  team07:
+    external: true
+
+services:
+  data-processor:
+    build: .
+    container_name: data-processor
+    image: data-processor
+    restart: unless-stopped
+    networks:
+      - team07
