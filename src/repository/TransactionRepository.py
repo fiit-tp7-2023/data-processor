@@ -13,13 +13,16 @@ class TransactionRepository:
         tx.run(
             "CREATE CONSTRAINT transaction FOR (t:Transaction) REQUIRE (t.id) IS UNIQUE"
         )
-        tx.run("CREATE CONSTRAINT address FOR (a:Address) REQUIRE (a.address) IS UNIQUE")
+        tx.run(
+            "CREATE CONSTRAINT address FOR (a:Address) REQUIRE (a.address) IS UNIQUE"
+        )
         tx.run("CREATE CONSTRAINT nft FOR (n:NFT) REQUIRE (n.address) IS UNIQUE")
         tx.run("CREATE CONSTRAINT tag FOR (t:Tag) REQUIRE (t.type) IS UNIQUE")
-        
-    # Insert NFTS 
+
+    # Insert NFTS
     def _insert_nfts(tx: ManagedTransaction, data: list[NftWithTags]):
-        formatted = [{
+        formatted = [
+            {
                 "nft_address": nft.address,
                 "nft_token_id": nft.tokenId,
                 "nft_name": nft.name,
@@ -31,7 +34,9 @@ class TransactionRepository:
                 "nft_animation_url": nft.animationUrl,
                 "nft_description": nft.description,
                 "nft_attributes": str(nft.attributes),
-            } for (nft, _) in data]
+            }
+            for (nft, _) in data
+        ]
 
         query = """
         UNWIND $props AS data
@@ -50,31 +55,30 @@ class TransactionRepository:
 
         if any("nft_attributes" in entry for entry in formatted):
             set_statements.append("n.attributes = data.nft_attributes")
-        
+
         if any("nft_image" in entry for entry in formatted):
             set_statements.append("n.image = data.nft_image")
-        
+
         if any("nft_raw" in entry for entry in formatted):
             set_statements.append("n.raw = data.nft_raw")
-        
+
         if any("nft_external_url" in entry for entry in formatted):
             set_statements.append("n.externalUrl = data.nft_external_url")
-        
+
         if any("nft_animation_url" in entry for entry in formatted):
             set_statements.append("n.animationUrl = data.nft_animation_url")
-            
+
         if any("nft_created_at_block" in entry for entry in formatted):
             set_statements.append("n.createdAtBlock = data.nft_created_at_block")
-            
+
         if any("nft_token_id" in entry for entry in formatted):
             set_statements.append("n.tokenId = data.nft_token_id")
-            
 
         if len(set_statements) > 0:
-            query += " SET "+ ", ".join(set_statements)
+            query += " SET " + ", ".join(set_statements)
 
         tx.run(query, props=formatted)
-        
+
         # Now insert tags with relation to NFT
         query = """
         UNWIND $props AS data
@@ -82,15 +86,13 @@ class TransactionRepository:
         MERGE (t:Tag {type: data.tag_type})
         CREATE (t)<-[:TAGGED { value: data.relation_weight }]-(n)
         """
-        
-        for (nft, tags) in data:
-            formatted = [{
-                "nft_address": nft.address,
-                "tag_type": tag,
-                "relation_weight": weight
-            } for tag, weight in tags]
-            tx.run(query, props=formatted)
 
+        for nft, tags in data:
+            formatted = [
+                {"nft_address": nft.address, "tag_type": tag, "relation_weight": weight}
+                for tag, weight in tags
+            ]
+            tx.run(query, props=formatted)
 
     # INSERT ADDRESSES
     @staticmethod
@@ -99,10 +101,15 @@ class TransactionRepository:
         UNWIND $props AS data
         CREATE (a:Address {address: data.address, createdAtBlock: data.createdAtBlock})
         """
-        tx.run(query, props=[{"address":a.address, "createdAtBlock":a.createdAtBlock} for a in addresses])
+        tx.run(
+            query,
+            props=[
+                {"address": a.address, "createdAtBlock": a.createdAtBlock}
+                for a in addresses
+            ],
+        )
 
-
-    # INSERT ADDRESSES
+    # INSERT TRANSACTIONS
     @staticmethod
     def _insert_transactions(tx: ManagedTransaction, transactions: list[Transaction]):
         query = """
@@ -113,5 +120,17 @@ class TransactionRepository:
         CREATE (from)-[:SENT]->(t:Transaction {id: data.transaction_id, amount: toInteger(data.amount)})<-[:RECEIVED]-(to),
                (t)-[:HAS_NFT]->(n)
         """
-        
-        tx.run(query, props=[{"transaction_id":t.id, "to_address": t.to_address , "from_address":t.from_address, "nft_address": t.nft_address , "amount": t.amount } for t in transactions])
+
+        tx.run(
+            query,
+            props=[
+                {
+                    "transaction_id": t.id,
+                    "to_address": t.to_address,
+                    "from_address": t.from_address,
+                    "nft_address": t.nft_address,
+                    "amount": t.amount,
+                }
+                for t in transactions
+            ],
+        )

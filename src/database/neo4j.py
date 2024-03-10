@@ -1,8 +1,9 @@
 from neo4j import GraphDatabase, Driver, ManagedTransaction
 
+
 class Neo4jDatabase:
     _instance = None
-    
+
     def __new__(cls, uri, user, password):
         if cls._instance is None:
             cls._instance = super(Neo4jDatabase, cls).__new__(cls)
@@ -19,12 +20,20 @@ class Neo4jDatabase:
         self.driver.close()
 
     def reset_database(self):
-        with self.driver.session() as session:
-            # Delete all nodes, relationships, and property keys
-            session.write_transaction(self._run_query, "MATCH (n) DETACH DELETE n")
-            session.write_transaction(self._run_query, "DROP CONSTRAINT address IF EXISTS")
-            session.write_transaction(self._run_query, "DROP CONSTRAINT nft IF EXISTS")
-            session.write_transaction(self._run_query, "DROP CONSTRAINT tag IF EXISTS")
+        nodes_deleted = 1
+        while nodes_deleted != 0:
+            records, summary, keys = self.driver.execute_query(
+                """MATCH (n) WITH n LIMIT 300 DETACH DELETE n RETURN count(n) AS nodesDeleted"""
+            )
+            print(records)
+            for record in records:
+                nodes_deleted = record[
+                    keys[0]
+                ]  # Accessing the value using the first key
+
+        self.driver.execute_query("DROP CONSTRAINT address IF EXISTS")
+        self.driver.execute_query("DROP CONSTRAINT nft IF EXISTS")
+        self.driver.execute_query("DROP CONSTRAINT tag IF EXISTS")
 
     @staticmethod
     def _run_query(tx: ManagedTransaction, query):

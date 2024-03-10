@@ -19,4 +19,4 @@ if __name__ == "__main__":
     #     port=os.getenv("POSTGRES_PORT"),
     #     database=os.getenv("POSTGRES_DB"),
     # )
-    program.Program.run()
+    program.Program.run_server()

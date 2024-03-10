@@ -12,12 +12,14 @@ class IndexerService:
             self.indexer_uri + "/graphql",
             json={"query": query, "variables": variables},
             headers={"Content-Type": "application/json", "Accept": "application/json"},
+            verify=False,
         )
 
         return raw.json()
-    
-    
-    def fetch_users(self, block_start: int, block_end: int, offset: int, limit: int) -> list[Address]:
+
+    def fetch_users(
+        self, block_start: int, block_end: int, offset: int, limit: int
+    ) -> list[Address]:
         query = """
             query getUsers($blockStart: Int!, $blockEnd: Int!, $limit: Int!, $offset: Int!) {
                 accountEntities(
@@ -32,11 +34,21 @@ class IndexerService:
             }
         """
 
-        parsed = self.run_query(query, {"blockStart": block_start, "blockEnd": block_end, "limit": limit, "offset": offset})
+        parsed = self.run_query(
+            query,
+            {
+                "blockStart": block_start,
+                "blockEnd": block_end,
+                "limit": limit,
+                "offset": offset,
+            },
+        )
         users = parsed["data"]["accountEntities"]
         return [Address(user["id"], user["createdAtBlock"]) for user in users]
-    
-    def fetch_tokens(self, block_start: int, block_end: int, offset: int, limit: int) -> list[NFT]:
+
+    def fetch_tokens(
+        self, block_start: int, block_end: int, offset: int, limit: int
+    ) -> list[NFT]:
         query = """
             query getTokens($blockStart: Int!, $blockEnd: Int!, $limit: Int!, $offset: Int!) {
                 nftEntities(
@@ -59,27 +71,39 @@ class IndexerService:
                 }
             }
         """
-        
-        parsed = self.run_query(query, {"blockStart": block_start, "blockEnd": block_end, "limit": limit, "offset": offset})
+
+        parsed = self.run_query(
+            query,
+            {
+                "blockStart": block_start,
+                "blockEnd": block_end,
+                "limit": limit,
+                "offset": offset,
+            },
+        )
         raw_nfts = parsed["data"]["nftEntities"]
         nfts = []
         for nft in raw_nfts:
-            nfts.append(NFT(
-                address=nft["id"],
-                tokenId=nft["tokenId"],
-                createdAtBlock=nft["createdAtBlock"],
-                name=nft["name"],
-                uri=nft["uri"],
-                description=nft["description"],
-                attributes=nft["attributes"],
-                image=nft["image"],
-                raw=nft["raw"],
-                externalUrl=nft["externalUrl"],
-                animationUrl=nft["animationUrl"],
-            ))
+            nfts.append(
+                NFT(
+                    address=nft["id"],
+                    tokenId=nft["tokenId"],
+                    createdAtBlock=nft["createdAtBlock"],
+                    name=nft["name"],
+                    uri=nft["uri"],
+                    description=nft["description"],
+                    attributes=nft["attributes"],
+                    image=nft["image"],
+                    raw=nft["raw"],
+                    externalUrl=nft["externalUrl"],
+                    animationUrl=nft["animationUrl"],
+                )
+            )
         return nfts
-    
-    def fetch_transfers(self, block_start:int, block_end: int, offset: int, limit: int) -> list[dict]:
+
+    def fetch_transfers(
+        self, block_start: int, block_end: int, offset: int, limit: int
+    ) -> list[dict]:
         query = """
             query getTransactions($blockStart: Int!, $blockEnd: Int!, $limit: Int!, $offset: Int!) {
                 nftTransferEntities(
@@ -106,7 +130,14 @@ class IndexerService:
                 }
             }
         """
-        variables = {"blockStart": block_start, "blockEnd": block_end, "limit": limit, "offset": offset}
+        variables = {
+            "blockStart": block_start,
+            "blockEnd": block_end,
+            "limit": limit,
+            "offset": offset,
+        }
         parsed = self.run_query(query, variables)
+        if parsed["data"] is None or parsed["data"]["nftTransferEntities"] is None:
+            return []
         transfers = parsed["data"]["nftTransferEntities"]
         return transfers
