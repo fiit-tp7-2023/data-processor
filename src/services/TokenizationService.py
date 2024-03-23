@@ -97,9 +97,9 @@ class TokenizationService:
         tokenizable_string = ""
         for attribute in attributes:
             if attribute["trait_type"]:
-                tokenizable_string += attribute["trait_type"] + ": "
+                tokenizable_string += str(attribute["trait_type"]) + ": "
             if attribute["value"]:
-                tokenizable_string += attribute["value"] + ". "
+                tokenizable_string += str(attribute["value"]) + ". "
         return tokenizable_string
 
     def tokenize(self, nft: NFT) -> dict[str, int]:

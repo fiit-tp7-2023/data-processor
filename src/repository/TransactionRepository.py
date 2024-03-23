@@ -125,7 +125,8 @@ class TransactionRepository:
         UNWIND $props AS data
         MATCH (n:NFT {address: data.nft_address})
         MERGE (t:Tag {type: data.tag_type})
-        CREATE (t)<-[:TAGGED { value: data.relation_weight }]-(n)
+        MERGE (t)<-[r:TAGGED]-(n)
+        ON CREATE SET r.value = data.relation_weight
         """
 
         for nft, tags in data:
