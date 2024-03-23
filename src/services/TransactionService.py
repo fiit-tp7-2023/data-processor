@@ -1,9 +1,10 @@
 from src.models.neo4j_models import Transaction, Address
 from src.repository.TransactionRepository import TransactionRepository
-from src.tag_types import NftWithTags
+from src.tag_types import NftWithTags, TransactionWithTags
 from neo4j import Driver
 from src.repository.DataRepository import DataRepository
 from src.services.TokenizationService import TokenizationService
+import time
 
 
 class TransactionService:
@@ -34,6 +35,8 @@ class TransactionService:
             )
 
         self.insert_transactions(transactions)
+        end_time = time.time()
+        print(f"Finished populating in {end_time - start_time} seconds")
 
     def insert_addresses(self, addresses: list[Address]):
         with self.driver.session() as session:
@@ -50,3 +53,7 @@ class TransactionService:
             session.write_transaction(
                 TransactionRepository._insert_transactions, transactions
             )
+
+    def fetch_nfts(self, count: int):
+        with self.driver.session() as session:
+            return session.read_transaction(TransactionRepository._fetch_nfts, count)
