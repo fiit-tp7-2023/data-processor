@@ -20,17 +20,17 @@ def process_data(start_block, block_count, tx_limit):
             start_block, start_block + block_count, 0, tx_limit
         )
 
-        if len(transfers) == 0:
-            print("\n\n")
-            print("_" * 50)
-            print(f"Processing {block_count} blocks")
-            print(
-                f"\nBlocks:                                 {start_block} - {start_block + block_count}"
-            )
-            print("Nothing to process")
-            print("¯" * 50)
-            start_block += block_count
-            continue
+        # if len(transfers) == 0:
+        #     print("\n\n")
+        #     print("_" * 50)
+        #     print(f"Processing {block_count} blocks")
+        #     print(
+        #         f"\nBlocks:                                 {start_block} - {start_block + block_count}"
+        #     )
+        #     print("Nothing to process")
+        #     print("¯" * 50)
+        #     start_block += block_count
+        #     continue
 
         repo.save(transfers)
         total_start = time.time()
@@ -106,10 +106,10 @@ def process_tokens(
         nfts = indexer_service.fetch_tokens(
             start_block, start_block + block_count, offset_tokens, tx_limit
         )
-        total_nfts += len(nfts)
+
         if len(nfts) == 0:
             break
-
+        total_nfts += len(nfts)
         processed_nfts: list[NftWithTags] = []
         for nft in nfts:
             tags: list[TagWithValue] = [
@@ -126,6 +126,7 @@ def process_transfers(
     repo, indexer_service, transaction_service, start_block, block_count, tx_limit
 ):
     totalTransfers = len(repo.get_transfers())
+
     offset = 0
     while repo.has_transfers():
         transaction_service.populate_db()
