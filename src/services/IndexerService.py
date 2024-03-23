@@ -112,7 +112,9 @@ class IndexerService:
                     offset: $offset,
                     where: {
                         createdAtBlock_gte : $blockStart,
-                        createdAtBlock_lt : $blockEnd
+                        createdAtBlock_lt : $blockEnd,
+                        fromAddress: {id_not_contains: "0x00"},
+                        toAddress: {id_not_contains: "0x00"}
                     }
 
                 ) {
@@ -137,6 +139,7 @@ class IndexerService:
             "offset": offset,
         }
         parsed = self.run_query(query, variables)
+
         if parsed["data"] is None or parsed["data"]["nftTransferEntities"] is None:
             return []
         transfers = parsed["data"]["nftTransferEntities"]

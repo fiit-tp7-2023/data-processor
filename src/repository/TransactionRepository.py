@@ -1,6 +1,7 @@
 from neo4j import ManagedTransaction
 from src.models.neo4j_models import Transaction, Address
-from src.tag_types import NftWithTags, TransactionWithTags
+from src.tag_types import NftAttributes, TransactionWithTags, NftWithTags
+import json
 
 
 class TransactionRepository:
@@ -19,10 +20,45 @@ class TransactionRepository:
         tx.run("CREATE CONSTRAINT nft FOR (n:NFT) REQUIRE (n.address) IS UNIQUE")
         tx.run("CREATE CONSTRAINT tag FOR (t:Tag) REQUIRE (t.type) IS UNIQUE")
 
+    def _fetch_nfts(tx: ManagedTransaction, count: int):
+        # fetch random 1000 nfts
+        query = """
+        MATCH (n:NFT)
+        RETURN n
+        LIMIT $count
+        """
+        result = tx.run(query, count=count)
+        return [
+            {
+                "address": record["n"]["address"],
+                "tokenId": record["n"]["tokenId"],
+                "name": record["n"]["name"],
+                "image": record["n"]["image"],
+                "uri": record["n"]["uri"],
+                "raw": record["n"]["raw"],
+                "externalUrl": record["n"]["externalUrl"],
+                "createdAtBlock": record["n"]["createdAtBlock"],
+                "animationUrl": record["n"]["animationUrl"],
+                "description": record["n"]["description"],
+                "attributes": record["n"]["attributes"],
+                "nft_vector": json.loads(record["n"]["nft_vector"]),
+            }
+            for record in result
+        ]
+
     # Insert NFTS
     def _insert_nfts(tx: ManagedTransaction, data: list[NftWithTags]):
-        formatted = [
-            {
+
+        formatted = []
+        for nft, tags in data:
+            tag_weight_list = []
+
+            for tag, weight in tags:
+                tag_weight_list.append({tag: weight})
+                # format to key : value
+
+            # Append the NFT information along with its tag-weight vector to the formatted list
+            a = {
                 "nft_address": nft.address,
                 "nft_token_id": nft.tokenId,
                 "nft_name": nft.name,
@@ -34,13 +70,15 @@ class TransactionRepository:
                 "nft_animation_url": nft.animationUrl,
                 "nft_description": nft.description,
                 "nft_attributes": str(nft.attributes),
+                "nft_vector": json.dumps(
+                    tag_weight_list
+                ),  # Include the tag-weight vector
             }
-            for (nft, _) in data
-        ]
+            formatted.append(a)
 
         query = """
         UNWIND $props AS data
-        CREATE (n:NFT {address: data.nft_address})
+        MERGE (n:NFT {address: data.nft_address})
         """
         set_statements = []
 
@@ -74,6 +112,9 @@ class TransactionRepository:
         if any("nft_token_id" in entry for entry in formatted):
             set_statements.append("n.tokenId = data.nft_token_id")
 
+        if any("nft_vector" in entry for entry in formatted):
+            set_statements.append("n.nft_vector = data.nft_vector")
+
         if len(set_statements) > 0:
             query += " SET " + ", ".join(set_statements)
 
@@ -99,7 +140,7 @@ class TransactionRepository:
     def _insert_addresses(tx: ManagedTransaction, addresses: list[Address]):
         query = """
         UNWIND $props AS data
-        CREATE (a:Address {address: data.address, createdAtBlock: data.createdAtBlock})
+        MERGE (a:Address {address: data.address, createdAtBlock: data.createdAtBlock})
         """
         tx.run(
             query,
@@ -115,10 +156,12 @@ class TransactionRepository:
         query = """
         UNWIND $props AS data
         MATCH (from:Address {address: data.from_address}),
-              (to: Address {address: data.to_address}),
-              (n:NFT {address: data.nft_address})
-        CREATE (from)-[:SENT]->(t:Transaction {id: data.transaction_id, amount: toInteger(data.amount)})<-[:RECEIVED]-(to),
-               (t)-[:HAS_NFT]->(n)
+            (to: Address {address: data.to_address}),
+            (n:NFT {address: data.nft_address})
+        MERGE (from)-[:SENT]->(t:Transaction {id: data.transaction_id})
+        MERGE (t)<-[:RECEIVED]-(to)
+        MERGE (t)-[:HAS_NFT]->(n)
+        ON CREATE SET t.amount = toInteger(data.amount)
         """
 
         tx.run(
