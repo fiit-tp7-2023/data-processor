@@ -35,8 +35,6 @@ class TransactionService:
             )
 
         self.insert_transactions(transactions)
-        end_time = time.time()
-        print(f"Finished populating in {end_time - start_time} seconds")
 
     def insert_addresses(self, addresses: list[Address]):
         with self.driver.session() as session:
